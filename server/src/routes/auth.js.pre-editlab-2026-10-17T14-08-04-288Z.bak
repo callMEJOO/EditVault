@@ -1,0 +1,46 @@
+const router = require('express').Router();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const db = require('../db/pool');
+const { auth } = require('../middleware/auth');
+
+router.post('/signup', async (req, res, next) => {
+  try {
+    const { email, password, displayName, referralCode } = req.body || {};
+    if (!email || !/^\S+@\S+\.\S+$/.test(email) || !password || password.length < 8 || !displayName?.trim()) return res.status(400).json({ error: 'Provide a valid email, display name, and password of at least 8 characters' });
+    const hash = await bcrypt.hash(password, 12);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query('INSERT INTO users(email,password_hash,display_name) VALUES($1,$2,$3) RETURNING id,email,display_name,role,verification_status', [email.toLowerCase().trim(), hash, displayName.trim()]);
+      await client.query('INSERT INTO wallets(user_id,balance) VALUES($1,0)', [rows[0].id]);
+      const referralId = String(referralCode || '').trim();
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(referralId) && referralId !== String(rows[0].id)) {
+        const { rows: referrerRows } = await client.query('SELECT id FROM users WHERE id = $1 AND role <> $2', [referralId, 'admin']);
+        if (referrerRows[0]) {
+          await client.query(`INSERT INTO referrals (referrer_id, referred_id) VALUES ($1, $2) ON CONFLICT (referred_id) DO NOTHING`, [referralId, rows[0].id]);
+        }
+      }
+      await client.query('COMMIT');
+      const user = rows[0];
+      const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      res.status(201).json({ token, user });
+    } catch (e) { await client.query('ROLLBACK'); if (e.code === '23505') return res.status(409).json({ error: 'Email is already registered' }); throw e; }
+    finally { client.release(); }
+  } catch (e) { next(e); }
+});
+router.post('/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body || {};
+    const { rows } = await db.query('SELECT id,email,password_hash,display_name,role,verification_status FROM users WHERE email=$1', [String(email || '').toLowerCase().trim()]);
+    if (!rows[0] || !(await bcrypt.compare(password || '', rows[0].password_hash))) return res.status(401).json({ error: 'Email or password is incorrect' });
+    const { password_hash, ...user } = rows[0];
+    const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user });
+  } catch (e) { next(e); }
+});
+router.get('/me', auth, async (req, res, next) => {
+  try { const { rows } = await db.query('SELECT id,email,display_name,role,tiktok_url,verification_status,created_at FROM users WHERE id=$1', [req.user.id]); if (!rows[0]) return res.status(404).json({ error: 'User not found' }); res.json({ user: rows[0] }); }
+  catch (e) { next(e); }
+});
+module.exports = router;

@@ -1,0 +1,12 @@
+Add these two require lines in server/src/index.js next to the existing route imports:
+
+const creatorReviewsRoutes = require('./routes/creator-reviews');
+const adminCreatorsRoutes = require('./routes/admin-creators');
+
+Then add these two mounts next to the other app.use('/api/...') routes,
+before the final error-handling middleware:
+
+app.use('/api/creator-reviews', creatorReviewsRoutes);
+app.use('/api/admin/creators', adminCreatorsRoutes);
+
+Do not replace index.js wholesale. Check that each line is present only once.

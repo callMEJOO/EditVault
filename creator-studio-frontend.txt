@@ -1,0 +1,2142 @@
+﻿===== MAIN JSX =====
+import React, { useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  Search,
+  Coins,
+  ShieldCheck,
+  Play,
+  Download,
+  Sparkles,
+  Clapperboard,
+  Menu,
+  X,
+  ArrowUpRight,
+  BadgeCheck,
+  Video,
+  UserRound,
+  Heart,
+  SlidersHorizontal,
+} from 'lucide-react';
+import './styles.css';
+
+const API_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '');
+
+const mockEdits = [
+  {
+    id: 1,
+    title: 'NEON AFTER HOURS',
+    creator: 'kairo.fx',
+    verified: true,
+    category: 'Anime',
+    price: 80,
+    likes: '2.4k',
+    tone: 'violet',
+    tag: 'TRENDING',
+    length: '00:18',
+  },
+  {
+    id: 2,
+    title: 'MIDNIGHT RUN',
+    creator: 'nox.visuals',
+    verified: true,
+    category: 'Cinematic',
+    price: 120,
+    likes: '1.8k',
+    tone: 'blue',
+    tag: 'EDITOR PICK',
+    length: '00:24',
+  },
+  {
+    id: 3,
+    title: 'AFTER THE RAIN',
+    creator: 'mira.mp4',
+    verified: false,
+    category: 'Aesthetic',
+    price: 60,
+    likes: '986',
+    tone: 'pink',
+    tag: 'NEW DROP',
+    length: '00:15',
+  },
+  {
+    id: 4,
+    title: 'LIMITLESS / AMV',
+    creator: 'zenith.edits',
+    verified: true,
+    category: 'Anime',
+    price: 150,
+    likes: '3.1k',
+    tone: 'orange',
+    tag: 'TOP SELLER',
+    length: '00:21',
+  },
+  {
+    id: 5,
+    title: 'CITY IN MOTION',
+    creator: 'framebykai',
+    verified: true,
+    category: 'Cinematic',
+    price: 100,
+    likes: '1.2k',
+    tone: 'green',
+    tag: 'POPULAR',
+    length: '00:19',
+  },
+  {
+    id: 6,
+    title: 'SOFT FOCUS',
+    creator: 'mira.mp4',
+    verified: false,
+    category: 'Aesthetic',
+    price: 50,
+    likes: '740',
+    tone: 'lavender',
+    tag: 'FRESH',
+    length: '00:12',
+  },
+];
+
+const categories = ['All edits', 'Anime', 'Cinematic', 'Aesthetic'];
+
+function App() {
+  const [category, setCategory] = useState('All edits');
+  const [query, setQuery] = useState('');
+  const [points, setPoints] = useState(0);
+  const [edits, setEdits] = useState([]);
+  const [purchased, setPurchased] = useState([]);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [modal, setModal] = useState('');
+  const [mobileNav, setMobileNav] = useState(false);
+  const [previewEdit, setPreviewEdit] = useState(null);
+
+  // Authentication state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Premium accounts
+  const [premiumProducts, setPremiumProducts] = useState([]);
+  const [premiumOrders, setPremiumOrders] = useState([]);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [premiumBuying, setPremiumBuying] = useState('');
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [premiumForm, setPremiumForm] = useState({
+    title: '',
+    serviceName: '',
+    description: '',
+    duration: '',
+    pricePoints: '',
+    imageUrl: '',
+  });
+
+  // Restore the saved session when the page loads.
+  useEffect(() => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    const restoreSession = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          localStorage.removeItem('editvault_token');
+          localStorage.removeItem('editvault_user');
+
+          if (!cancelled) setUser(null);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setUser(data.user || data);
+        }
+      } catch (error) {
+        console.error('Session restore failed:', error);
+      }
+    };
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load published edits from the backend and keep wallet/library in sync with the account.
+  useEffect(() => {
+    let cancelled = false;
+    const loadEdits = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/edits`);
+        if (!response.ok) throw new Error('Could not load edits.');
+        const data = await response.json();
+        const rows = Array.isArray(data.edits) ? data.edits : [];
+        if (!cancelled) {
+          setEdits(rows.map((row, index) => ({
+            ...row,
+            id: row.id,
+            previewUrl: row.has_preview
+              ? `${API_URL}/api/edits/${row.id}/preview`
+              : null,
+            creator: row.creator_name || 'creator',
+            verified: row.verification_status === 'verified',
+            price: Number(row.price_points || 0),
+            likes: 'أ¢â‚¬â€‌',
+            tone: ['violet', 'blue', 'pink', 'orange', 'green', 'lavender'][index % 6],
+            tag: 'ORIGINAL EDIT',
+            length: '--:--',
+          })));
+        }
+      } catch (error) {
+        console.error('Loading edits failed:', error);
+        if (!cancelled) setNotice(error.message || 'Could not load edits from the server.');
+      }
+    };
+    loadEdits();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAccountData = async () => {
+      const token = localStorage.getItem('editvault_token');
+      if (!user || !token) {
+        setPoints(0);
+        setPurchased([]);
+        return;
+      }
+      const headers = { Authorization: `Bearer ${token}` };
+      try {
+        const [walletResponse, libraryResponse] = await Promise.all([
+          fetch(`${API_URL}/api/wallet`, { headers }),
+          fetch(`${API_URL}/api/edits/mine/library`, { headers }),
+        ]);
+        if (!walletResponse.ok) throw new Error('Could not load your wallet.');
+        if (!libraryResponse.ok) throw new Error('Could not load your library.');
+        const walletData = await walletResponse.json();
+        const libraryData = await libraryResponse.json();
+        if (!cancelled) {
+          setPoints(Number(walletData.balance || 0));
+          setPurchased((libraryData.library || []).map((item) => item.id));
+        }
+      } catch (error) {
+        console.error('Loading wallet/library failed:', error);
+        if (!cancelled) setNotice(error.message || 'Could not load your account data.');
+      }
+    };
+    loadAccountData();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPremiumProducts = async () => {
+      setPremiumLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/api/premium`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || 'Could not load premium products.');
+        }
+        if (!cancelled) {
+          setPremiumProducts(Array.isArray(data.products) ? data.products : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Loading premium products failed:', error);
+          setNotice(error.message || 'Could not load premium products.');
+        }
+      } finally {
+        if (!cancelled) setPremiumLoading(false);
+      }
+    };
+
+    loadPremiumProducts();
+    return () => { cancelled = true; };
+  }, []);
+
+  const loadPremiumOrders = async () => {
+    const token = localStorage.getItem('editvault_token');
+    if (!user || !token) {
+      setPremiumOrders([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium/orders/mine`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load your premium orders.');
+      }
+      setPremiumOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      console.error('Loading premium orders failed:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadPremiumOrders();
+  }, [user]);
+
+  const buyPremium = async (product) => {
+    if (!user) {
+      setNotice('Please log in before ordering a premium account.');
+      openAuth('login');
+      return;
+    }
+
+    if (premiumBuying) return;
+
+    const token = localStorage.getItem('editvault_token');
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      logout();
+      return;
+    }
+
+    const price = Number(product.price_points || 0);
+    if (points < price) {
+      setNotice(`You need ${price - points} more points for this product.`);
+      return;
+    }
+
+    setPremiumBuying(product.id);
+    setNotice('');
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/premium/${product.id}/order`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Could not place your order.');
+      }
+
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        setPoints(Number(walletData.balance || 0));
+      }
+
+      await loadPremiumOrders();
+      setNotice('Order placed! Your order is waiting for admin fulfillment.');
+    } catch (error) {
+      setNotice(error.message || 'Could not place your order.');
+    } finally {
+      setPremiumBuying('');
+    }
+  };
+
+  const loadAdminOrders = async () => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!user || user.role !== 'admin' || !token) {
+      setAdminOrders([]);
+      return;
+    }
+
+    setAdminLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load admin orders.');
+      }
+
+      setAdminOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      setNotice(error.message || 'Could not load admin orders.');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const refreshPremiumProducts = async () => {
+    const isAdmin = user?.role === 'admin';
+    const token = localStorage.getItem('editvault_token');
+    const endpoint = isAdmin
+      ? `${API_URL}/api/premium/admin/products`
+      : `${API_URL}/api/premium`;
+
+    const response = await fetch(endpoint, {
+      headers: isAdmin && token
+        ? { Authorization: `Bearer ${token}` }
+        : {},
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not refresh products.');
+    }
+
+    setPremiumProducts(Array.isArray(data.products) ? data.products : []);
+  };
+
+  const createPremiumProduct = async (event) => {
+    event.preventDefault();
+
+    if (adminSaving) return;
+
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      return;
+    }
+
+    const price = Number(premiumForm.pricePoints);
+
+    if (
+      !premiumForm.title.trim() ||
+      !premiumForm.serviceName.trim() ||
+      !Number.isInteger(price) ||
+      price < 1
+    ) {
+      setNotice('Enter a title, service name, and valid price in points.');
+      return;
+    }
+
+    setAdminSaving(true);
+    setNotice('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: premiumForm.title.trim(),
+          serviceName: premiumForm.serviceName.trim(),
+          description: premiumForm.description.trim(),
+          duration: premiumForm.duration.trim(),
+          pricePoints: price,
+          imageUrl: premiumForm.imageUrl.trim() || null,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not create product.');
+      }
+
+      setPremiumForm({
+        title: '',
+        serviceName: '',
+        description: '',
+        duration: '',
+        pricePoints: '',
+        imageUrl: '',
+      });
+
+      await refreshPremiumProducts();
+      setNotice('Premium product added successfully.');
+    } catch (error) {
+      setNotice(error.message || 'Could not create product.');
+    } finally {
+      setAdminSaving(false);
+    }
+  };
+
+  const setPremiumProductStatus = async (product, status) => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium/${product.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not update product.');
+      }
+
+      await refreshPremiumProducts();
+
+      setNotice(
+        status === 'hidden'
+          ? 'Product hidden.'
+          : 'Product is available again.'
+      );
+    } catch (error) {
+      setNotice(error.message || 'Could not update product.');
+    }
+  };
+
+  const updatePremiumOrder = async (order, status) => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      return;
+    }
+
+    const action =
+      status === 'completed'
+        ? 'mark this order as completed'
+        : 'reject this order and refund its points';
+
+    if (!window.confirm(`Are you sure you want to ${action}?`)) return;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/premium/orders/${order.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not update order.');
+      }
+
+      await loadAdminOrders();
+      await loadPremiumOrders();
+
+      setNotice(
+        status === 'completed'
+          ? 'Order marked as completed.'
+          : 'Order rejected. Points refund processed.'
+      );
+    } catch (error) {
+      setNotice(error.message || 'Could not update order.');
+    }
+  };
+
+  useEffect(() => {
+    loadAdminOrders();
+  }, [user]);
+
+  const filtered = useMemo(
+    () =>
+      edits.filter(
+        (edit) =>
+          (category === 'All edits' || edit.category === category) &&
+          `${edit.title} ${edit.creator} ${edit.category}`
+            .toLowerCase()
+            .includes(query.toLowerCase())
+      ),
+    [category, query]
+  );
+
+  const resetAuthForm = () => {
+    setEmail('');
+    setPassword('');
+    setDisplayName('');
+    setAuthLoading(false);
+  };
+
+  const openAuth = (type) => {
+    resetAuthForm();
+    setNotice('');
+    setModal(type);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('editvault_token');
+    localStorage.removeItem('editvault_user');
+
+    setUser(null);
+    resetAuthForm();
+    setModal('');
+
+    setNotice('You have been logged out successfully.');
+  };
+
+  // Real signup/login API integration.
+  const submitAuth = async (event) => {
+    event.preventDefault();
+
+    if (authLoading) return;
+
+    const isSignup = modal === 'signup';
+
+    if (isSignup && !displayName.trim()) {
+      setNotice('Please enter your display name.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setNotice('Password must be at least 8 characters.');
+      return;
+    }
+
+    setAuthLoading(true);
+    setNotice('');
+
+    try {
+      const endpoint = isSignup
+        ? '/api/auth/signup'
+        : '/api/auth/login';
+
+      const payload = isSignup
+        ? {
+            displayName: displayName.trim(),
+            email: email.trim(),
+            password,
+          }
+        : {
+            email: email.trim(),
+            password,
+          };
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            (response.status === 409
+              ? 'An account with this email already exists.'
+              : 'Authentication failed. Please try again.')
+        );
+      }
+
+      if (!data.token || !data.user) {
+        throw new Error(
+          'The server response is missing the account or authentication token.'
+        );
+      }
+
+      // Save the real authentication session.
+      localStorage.setItem('editvault_token', data.token);
+      localStorage.setItem('editvault_user', JSON.stringify(data.user));
+
+      setUser(data.user);
+      setModal('');
+      resetAuthForm();
+
+      setNotice(
+        isSignup
+          ? 'Your EditVault account was created successfully!'
+          : 'Welcome back! You are now logged in.'
+      );
+    } catch (error) {
+      console.error('Authentication error:', error);
+
+      setNotice(
+        error.message ||
+          'Could not connect to the server. Make sure the backend is running.'
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const buy = async (edit) => {
+    if (!user) {
+      setNotice('Please log in before unlocking an edit.');
+      openAuth('login');
+      return;
+    }
+    if (purchased.includes(edit.id)) {
+      setNotice(`You already own "${edit.title}".`);
+      return;
+    }
+    if (purchaseLoading) return;
+
+    const token = localStorage.getItem('editvault_token');
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      logout();
+      return;
+    }
+
+    setPurchaseLoading(true);
+    setNotice('');
+    try {
+      const response = await fetch(`${API_URL}/api/edits/${edit.id}/purchase`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || data.message || 'Purchase failed.');
+
+      setPurchased((current) => current.includes(edit.id) ? current : [...current, edit.id]);
+      // Fetch the server's balance after purchase; never calculate a trusted balance in the browser.
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        setPoints(Number(walletData.balance || 0));
+      }
+      setNotice(`Unlocked "${edit.title}". It is now in your library.`);
+    } catch (error) {
+      setNotice(error.message || 'Purchase failed. Please try again.');
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <a className="brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={20} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>CREATOR MARKETPLACE</small>
+          </span>
+        </a>
+
+        <nav className={mobileNav ? 'nav open' : 'nav'}>
+          <a
+            className="nav-active"
+            href="#explore"
+            onClick={() => setMobileNav(false)}
+          >
+            Explore
+          </a>
+
+          <a href="#creators" onClick={() => setMobileNav(false)}>
+            Creators
+          </a>
+
+          <a href="#how" onClick={() => setMobileNav(false)}>
+            How it works
+          </a>
+        </nav>
+
+        <div className="top-actions">
+          <button
+            className="points-pill"
+            onClick={() => setModal('points')}
+          >
+            <Coins size={16} />
+            <b>{points}</b>
+            <span>PTS</span>
+          </button>
+
+          {user ? (
+            <>
+              <span
+                className="creator-name"
+                title={user.email || ''}
+              >
+                {user.displayName || user.display_name || user.email}
+              </span>
+
+              <button className="login-btn" onClick={logout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="login-btn"
+                onClick={() => openAuth('login')}
+              >
+                Log in
+              </button>
+
+              <button
+                className="signup-btn"
+                onClick={() => openAuth('signup')}
+              >
+                Join free <ArrowUpRight size={15} />
+              </button>
+            </>
+          )}
+
+          <button
+            className="mobile-menu"
+            onClick={() => setMobileNav((value) => !value)}
+            aria-label="Toggle menu"
+          >
+            {mobileNav ? <X /> : <Menu />}
+          </button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section className="hero">
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <span className="live-dot" />
+              MADE BY CREATORS. OWNED BY YOU.
+            </div>
+
+            <h1>
+              Your next edit.
+              <br />
+              <span>One click away.</span>
+            </h1>
+
+            <p>
+              Discover original edits from independent creators.
+              Support the talent, unlock the full-quality video,
+              and make it yours.
+            </p>
+
+            <div className="hero-buttons">
+              <a className="primary-cta" href="#explore">
+                Explore edits <ArrowUpRight size={17} />
+              </a>
+
+              <button
+                className="secondary-cta"
+                onClick={() =>
+                  user ? setNotice('Creator tools are coming soon.') : openAuth('signup')
+                }
+              >
+                <Video size={16} /> I'm a creator
+              </button>
+            </div>
+
+            <div className="hero-proof">
+              <div className="avatar-stack">
+                <i>k</i>
+                <i>n</i>
+                <i>m</i>
+                <i>z</i>
+              </div>
+
+              <span>
+                <b>Creator-first</b>
+                <br />
+                A marketplace built on credit, not reposts.
+              </span>
+            </div>
+          </div>
+
+          <div className="hero-art">
+            <div className="art-glow" />
+
+            <div className="poster poster-back">
+              <span className="poster-mini">EV / 002</span>
+              <div className="poster-lines">
+                NO
+                <br />
+                LIMITS
+              </div>
+              <span className="poster-bottom">
+                ORIGINAL CREATOR EDIT
+              </span>
+            </div>
+
+            <div className="poster poster-front">
+              <div className="poster-top">
+                <span>FEATURED DROP</span>
+                <span className="poster-dot" />
+              </div>
+
+              <div className="poster-orb" />
+
+              <div className="poster-title">
+                AFTER
+                <br />
+                <em>DARK</em>
+              </div>
+
+              <div className="poster-foot">
+                <span>
+                  kairo.fx <BadgeCheck size={12} />
+                </span>
+                <span>00:18 / 4K</span>
+              </div>
+
+              <div className="play-float">
+                <Play size={17} fill="currentColor" />
+              </div>
+            </div>
+
+            <div className="floating-chip chip-top">
+              <Sparkles size={15} /> Creator verified
+            </div>
+
+            <div className="floating-chip chip-bottom">
+              <Coins size={16} />
+              <span>
+                <b>80 points</b>
+                <small>Unlock original</small>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="stats-row">
+          <div>
+            <strong>01</strong>
+            <span>Find your style</span>
+          </div>
+
+          <div>
+            <strong>02</strong>
+            <span>Earn points from rewarded ads</span>
+          </div>
+
+          <div>
+            <strong>03</strong>
+            <span>Unlock the original</span>
+          </div>
+
+          <div className="stats-note">
+            <ShieldCheck size={18} />
+            <span>
+              Credit the creator.
+              <br />
+              <b>Always.</b>
+            </span>
+          </div>
+        </section>
+
+        <section className="market-section" id="explore">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">THE DROP ZONE / 001</div>
+              <h2>
+                Find your <span>next favorite.</span>
+              </h2>
+              <p>Handpicked edits. Real creators. Original quality.</p>
+            </div>
+
+            <button
+              className="view-all"
+              onClick={() => {
+                setCategory('All edits');
+                setQuery('');
+              }}
+            >
+              View all edits <ArrowUpRight size={15} />
+            </button>
+          </div>
+
+          <div className="market-controls">
+            <div className="category-tabs">
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setCategory(item)}
+                  className={
+                    category === item
+                      ? 'category-tab selected'
+                      : 'category-tab'
+                  }
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <label className="search-box">
+              <Search size={17} />
+
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search edits or creators..."
+              />
+
+              <SlidersHorizontal
+                size={16}
+                className="search-filter"
+              />
+            </label>
+          </div>
+
+          <div className="edit-grid">
+            {filtered.map((edit, index) => (
+              <article className="edit-card" key={edit.id}>
+                <div className={`edit-cover cover-${edit.tone}`}>
+                  <div className="cover-noise" />
+
+                  <div className="cover-top">
+                    <span>{edit.tag}</span>
+
+                    <button
+                      aria-label="Save edit"
+                      onClick={() => {
+                        if (!user) {
+                          setNotice('Sign in to save edits to your favorites.');
+                          openAuth('login');
+                        } else {
+                          setNotice('Favorites are coming soon.');
+                        }
+                      }}
+                    >
+                      <Heart size={16} />
+                    </button>
+                  </div>
+
+                  <div className="cover-art">
+                    <span className="cover-index">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+
+                    <div className="cover-graphic">
+                      {edit.category === 'Anime'
+                        ? 'ظ‡آ½آ±'
+                        : edit.category === 'Cinematic'
+                        ? 'FRAME'
+                        : 'S O F T'}
+                    </div>
+
+                    <span className="cover-title">
+                      {edit.title}
+                    </span>
+                  </div>
+
+                  <span className="duration">{edit.length}</span>
+
+                  <button
+                    className="preview-play"
+                    aria-label={`Preview ${edit.title}`}
+                    onClick={() => {
+                      if (edit.previewUrl) {
+                        setPreviewEdit(edit);
+                      } else {
+                        setNotice('Preview is not available for this edit yet.');
+                      }
+                    }}
+                  >
+                    <Play size={16} fill="currentColor" />
+                  </button>
+                </div>
+
+                <div className="card-body">
+                  <div className="creator-line">
+                    <span className="creator-avatar">
+                      {edit.creator[0]}
+                    </span>
+
+                    <span className="creator-name">
+                      @{edit.creator}
+                    </span>
+
+                    {edit.verified && (
+                      <span
+                        className="verified"
+                        title="Verified creator"
+                      >
+                        <BadgeCheck size={15} />
+                      </span>
+                    )}
+
+                    <span className="likes">
+                      <Heart size={12} />
+                      {edit.likes}
+                    </span>
+                  </div>
+
+                  <h3>{edit.title}</h3>
+
+                  <div className="card-footer">
+                    <span className="price">
+                      <Coins size={16} />
+                      <b>{edit.price}</b>
+                      <small>PTS</small>
+                    </span>
+
+                    <button
+                      className={
+                        purchased.includes(edit.id)
+                          ? 'buy-btn owned'
+                          : 'buy-btn'
+                      }
+                      onClick={() => buy(edit)}
+                    >
+                      {purchased.includes(edit.id) ? (
+                        <>
+                          <Download size={14} /> Owned
+                        </>
+                      ) : purchaseLoading ? (
+                        'Processing...'
+                      ) : (
+                        <>
+                          Unlock <ArrowUpRight size={14} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="empty-state">
+              No edits match that search. Try another creator or category.
+            </div>
+          )}
+        </section>
+
+        <section className="premium-section" id="premium">
+          <div className="premium-heading">
+            <div>
+              <div className="eyebrow">EXCLUSIVE ACCESS</div>
+              <h2>Premium <span>Accounts.</span></h2>
+              <p>Place an order with points. The admin will handle delivery.</p>
+            </div>
+            <span className="premium-count">
+              {premiumProducts.length} AVAILABLE
+            </span>
+          </div>
+
+          {premiumLoading ? (
+            <div className="premium-empty">Loading premium products...</div>
+          ) : premiumProducts.length === 0 ? (
+            <div className="premium-empty">
+              No premium products are available right now.
+            </div>
+          ) : (
+            <div className="premium-grid">
+              {premiumProducts.map((product) => (
+                <article className="premium-card" key={product.id}>
+                  {product.image_url ? (
+                    <img
+                      className="premium-image"
+                      src={product.image_url}
+                      alt={product.title}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="premium-image premium-image-placeholder">
+                      <ShieldCheck size={34} />
+                    </div>
+                  )}
+
+                  <div className="premium-card-content">
+                    <span className="premium-service">
+                      {product.service_name}
+                    </span>
+                    <h3>{product.title}</h3>
+                    <p>{product.description || 'Premium digital access.'}</p>
+                    {product.duration && (
+                      <span className="premium-duration">
+                        {product.duration}
+                      </span>
+                    )}
+
+                    <div className="premium-card-footer">
+                      <span className="price">
+                        <Coins size={16} />
+                        <b>{Number(product.price_points || 0)}</b>
+                        <small>PTS</small>
+                      </span>
+
+                      <button
+                        className="buy-btn"
+                        disabled={Boolean(premiumBuying)}
+                        onClick={() => buyPremium(product)}
+                      >
+                        {premiumBuying === product.id
+                          ? 'Processing...'
+                          : 'Order now'}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {user && (
+            <div className="premium-orders">
+              <div className="premium-orders-heading">
+                <div className="eyebrow">YOUR ACTIVITY</div>
+                <h3>My premium orders</h3>
+              </div>
+
+              {premiumOrders.length === 0 ? (
+                <p className="premium-empty">You haven't placed any orders yet.</p>
+              ) : (
+                <div className="premium-order-list">
+                  {premiumOrders.map((order) => (
+                    <div className="premium-order" key={order.id}>
+                      <div>
+                        <strong>
+                          {order.title || order.service_name || 'Premium order'}
+                        </strong>
+                        <small>
+                          {order.created_at
+                            ? new Date(order.created_at).toLocaleDateString()
+                            : ''}
+                          {' ط¢آ· '}
+                          {Number(order.price_points || 0)} points
+                        </small>
+                      </div>
+                      <span className={`premium-status status-${order.status}`}>
+                        {order.status === 'pending'
+                          ? 'Pending'
+                          : order.status === 'completed'
+                          ? 'Completed'
+                          : order.status === 'rejected'
+                          ? 'Rejected / refunded'
+                          : order.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {user?.role === 'admin' && (
+            <div className="premium-admin">
+              <div className="premium-admin-heading">
+                <div className="eyebrow">ADMIN CONTROL</div>
+                <h2>Premium Accounts Dashboard</h2>
+                <p>Manage premium products and customer orders.</p>
+              </div>
+
+              <div className="premium-admin-subsection">
+                <h3>Add a premium product</h3>
+
+                <form className="premium-admin-form" onSubmit={createPremiumProduct}>
+                  <label>
+                    Product title
+                    <input
+                      value={premiumForm.title}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, title: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Service name
+                    <input
+                      value={premiumForm.serviceName}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, serviceName: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Duration
+                    <input
+                      value={premiumForm.duration}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, duration: e.target.value })}
+                      placeholder="30 days"
+                    />
+                  </label>
+
+                  <label>
+                    Price in points
+                    <input
+                      type="number"
+                      min="1"
+                      value={premiumForm.pricePoints}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, pricePoints: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  <label className="premium-admin-full">
+                    Image URL
+                    <input
+                      type="url"
+                      value={premiumForm.imageUrl}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, imageUrl: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </label>
+
+                  <label className="premium-admin-full">
+                    Description
+                    <textarea
+                      rows="3"
+                      value={premiumForm.description}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, description: e.target.value })}
+                    />
+                  </label>
+
+                  <button type="submit" disabled={adminSaving}>
+                    {adminSaving ? 'Saving...' : 'Add product'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="premium-admin-subsection">
+                <h3>Manage products</h3>
+
+                {premiumProducts.length === 0 ? (
+                  <p>No products found.</p>
+                ) : (
+                  <div className="premium-admin-list">
+                    {premiumProducts.map((product) => (
+                      <div className="premium-admin-item" key={product.id}>
+                        <div className="premium-admin-item-info">
+                          <strong>{product.title}</strong>
+                          <span>
+                            {product.service_name || 'Premium'} آ· {product.price_points} points
+                          </span>
+                          <small>Status: {product.status || 'available'}</small>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPremiumProductStatus(
+                              product,
+                              product.status === 'hidden' ? 'available' : 'hidden'
+                            )
+                          }
+                        >
+                          {product.status === 'hidden' ? 'Show product' : 'Hide product'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="premium-admin-subsection">
+                <h3>Customer orders</h3>
+
+                {adminLoading ? (
+                  <p>Loading orders...</p>
+                ) : adminOrders.length === 0 ? (
+                  <p>No customer orders yet.</p>
+                ) : (
+                  <div className="premium-admin-list">
+                    {adminOrders.map((order) => (
+                      <div className="premium-admin-item" key={order.id}>
+                        <div className="premium-admin-item-info">
+                          <strong>
+                            {order.title || order.service_name || 'Premium order'}
+                          </strong>
+                          <span>
+                            Customer: {order.buyer_name || order.buyer_email || order.user_id || 'Unknown'}
+                          </span>
+                          <span>{Number(order.price_points || 0)} points</span>
+                          <small>Status: {order.status}</small>
+                        </div>
+
+                        {order.status === 'pending' && (
+                          <div className="premium-admin-actions">
+                            <button
+                              type="button"
+                              onClick={() => updatePremiumOrder(order, 'completed')}
+                            >
+                              Complete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updatePremiumOrder(order, 'rejected')}
+                            >
+                              Reject &amp; refund
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="creator-banner" id="creators">
+          <div className="creator-banner-icon">
+            <Clapperboard size={28} />
+          </div>
+
+          <div>
+            <div className="eyebrow">
+              FOR THE ONES BEHIND THE EDIT
+            </div>
+
+            <h2>
+              Your work deserves <span>more than a repost.</span>
+            </h2>
+
+            <p>
+              Publish your edits, build a verified profile, and earn
+              points every time someone unlocks your work.
+            </p>
+          </div>
+
+          <button
+            className="primary-cta"
+            onClick={() =>
+              user
+                ? setNotice('Creator tools are coming soon.')
+                : openAuth('signup')
+            }
+          >
+            Become a creator <ArrowUpRight size={17} />
+          </button>
+        </section>
+
+        <section className="how-section" id="how">
+          <div className="eyebrow">SIMPLE BY DESIGN</div>
+
+          <h2>
+            Good edits. <span>Good credit.</span>
+          </h2>
+
+          <div className="how-grid">
+            <div>
+              <span className="step-no">01</span>
+              <Search />
+              <h3>Discover</h3>
+              <p>
+                Browse previews and find the edit that fits your vision.
+              </p>
+            </div>
+
+            <div>
+              <span className="step-no">02</span>
+              <Coins />
+              <h3>Earn points</h3>
+              <p>
+                Complete eligible rewarded ads to build your balance.
+              </p>
+            </div>
+
+            <div>
+              <span className="step-no">03</span>
+              <Download />
+              <h3>Unlock & download</h3>
+              <p>
+                Spend points to access the original file from your library.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <a className="brand footer-brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={18} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>CREATOR MARKETPLACE</small>
+          </span>
+        </a>
+
+        <span>Built for the people who make the edits.</span>
+
+        <div>
+          <a href="#how">How it works</a>
+          <a href="#creators">Creators</a>
+          <a href="mailto:hello@editvault.example">Contact</a>
+        </div>
+
+        <small>ط¢آ© 2026 EditVault ط¢آ· Respect the original.</small>
+      </footer>
+
+      {previewEdit && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setPreviewEdit(null)}
+        >
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Preview ${previewEdit.title}`}
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: 'min(900px, 94vw)', maxWidth: '900px' }}
+          >
+            <button
+              className="modal-close"
+              onClick={() => setPreviewEdit(null)}
+              aria-label="Close preview"
+            >
+              <X />
+            </button>
+
+            <div className="eyebrow">EDITVAULT / VIDEO PREVIEW</div>
+
+            <h2 style={{ marginBottom: '16px' }}>
+              {previewEdit.title}
+            </h2>
+
+            <video
+              key={previewEdit.id}
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+              style={{
+                display: 'block',
+                width: '100%',
+                maxHeight: '70vh',
+                background: '#000',
+                borderRadius: '12px',
+              }}
+              src={previewEdit.previewUrl}
+            >
+              Your browser does not support video playback.
+            </video>
+
+            <p style={{ marginTop: '12px' }}>
+              Preview only ط¢آ· Unlock the edit to access the original.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {notice && (
+        <div className="toast" role="status">
+          {notice}
+
+          <button
+            onClick={() => setNotice('')}
+            aria-label="Dismiss"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {modal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            if (!authLoading) setModal('');
+          }}
+        >
+          <div
+            className="modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={() => {
+                if (!authLoading) setModal('');
+              }}
+              aria-label="Close"
+              disabled={authLoading}
+            >
+              <X />
+            </button>
+
+            {modal === 'points' ? (
+              <>
+                <div className="modal-icon">
+                  <Coins />
+                </div>
+
+                <div className="eyebrow">YOUR WALLET</div>
+
+                <h2>
+                  {points} <span>points</span>
+                </h2>
+
+                <p>
+                  Earn points by completing verified rewarded ads.
+                  Ad rewards will be enabled once the provider's
+                  server-side verification is connected.
+                </p>
+
+                <button
+                  className="primary-cta full"
+                  onClick={() =>
+                    setNotice(
+                      'Reward ads are not connected in this preview yet.'
+                    )
+                  }
+                >
+                  Reward ads coming soon <ArrowUpRight size={16} />
+                </button>
+              </>
+            ) : modal === 'creator' ? (
+              <>
+                <div className="modal-icon">
+                  <Clapperboard />
+                </div>
+
+                <div className="eyebrow">CREATOR ACCESS</div>
+
+                <h2>
+                  Make it. <span>Own it.</span>
+                </h2>
+
+                <p>
+                  Creator accounts can upload original edits, set
+                  point prices, and request manual verification.
+                  Sign up first, then submit your TikTok profile
+                  for review.
+                </p>
+
+                <button
+                  className="primary-cta full"
+                  onClick={() => openAuth('signup')}
+                >
+                  Create creator account <ArrowUpRight size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="modal-icon">
+                  <UserRound />
+                </div>
+
+                <div className="eyebrow">
+                  {modal === 'login'
+                    ? 'WELCOME BACK'
+                    : 'YOUR CREATOR JOURNEY STARTS HERE'}
+                </div>
+
+                <h2>
+                  {modal === 'login'
+                    ? 'Good to see you.'
+                    : 'Join the vault.'}
+                </h2>
+
+                <p>
+                  {modal === 'login'
+                    ? 'Log in to access your library and points.'
+                    : 'Create an account to unlock edits or publish your own.'}
+                </p>
+
+                <form onSubmit={submitAuth}>
+                  {modal === 'signup' && (
+                    <label>
+                      Display name
+                      <input
+                        required
+                        type="text"
+                        autoComplete="name"
+                        value={displayName}
+                        onChange={(event) =>
+                          setDisplayName(event.target.value)
+                        }
+                        placeholder="Your creator name"
+                        minLength={2}
+                        maxLength={60}
+                      />
+                    </label>
+                  )}
+
+                  <label>
+                    Email address
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) =>
+                        setEmail(event.target.value)
+                      }
+                      placeholder="you@example.com"
+                    />
+                  </label>
+
+                  <label>
+                    Password
+                    <input
+                      required
+                      minLength={8}
+                      type="password"
+                      autoComplete={
+                        modal === 'login'
+                          ? 'current-password'
+                          : 'new-password'
+                      }
+                      value={password}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
+                      placeholder="At least 8 characters"
+                    />
+                  </label>
+
+                  <button
+                    className="primary-cta full"
+                    type="submit"
+                    disabled={authLoading}
+                  >
+                    {authLoading
+                      ? 'Please wait...'
+                      : modal === 'login'
+                      ? 'Log in'
+                      : 'Create account'}
+
+                    {!authLoading && <ArrowUpRight size={16} />}
+                  </button>
+                </form>
+
+                <div className="modal-switch">
+                  {modal === 'login' ? (
+                    <>
+                      New here?{' '}
+                      <button
+                        disabled={authLoading}
+                        onClick={() => openAuth('signup')}
+                      >
+                        Create an account
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        disabled={authLoading}
+                        onClick={() => openAuth('login')}
+                      >
+                        Log in
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+
+
+===== STYLES CSS =====
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{font-family:Manrope,system-ui,sans-serif;color:#f3f1f8;background:#101014;font-synthesis:none;text-rendering:optimizeLegibility;--bg:#101014;--panel:#17171d;--muted:#9897a5;--line:#2a2932;--lime:#c6ff4d;--purple:#a78bfa}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:radial-gradient(ellipse at 50% -15%,#262038 0,transparent 42%),var(--bg)}button,input,a{font:inherit}button,a{-webkit-tap-highlight-color:transparent}button{cursor:pointer}a{color:inherit;text-decoration:none}.app-shell{max-width:1440px;margin:0 auto;padding:0 5.3%}.topbar{height:86px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff0c;gap:24px}.brand{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;letter-spacing:-.7px;line-height:1.1}.brand-mark{width:38px;height:38px;border:1px solid #ffffff24;border-radius:12px;display:grid;place-items:center;color:var(--lime);background:#c6ff4d0b}.brand-accent{color:var(--lime)}.brand small{display:block;margin-top:5px;font:8px 'DM Mono',monospace;letter-spacing:1.7px;color:#898794}.nav{display:flex;gap:34px;color:#9e9ca9;font-size:12px;font-weight:700}.nav a{transition:color .2s}.nav a:hover,.nav .nav-active{color:#fff}.top-actions{display:flex;align-items:center;gap:10px}.points-pill{display:flex;align-items:center;gap:7px;border:1px solid #3b3c2e;border-radius:9px;padding:10px 12px;color:var(--lime);background:#c6ff4d0b;font-size:11px}.points-pill span{font:9px 'DM Mono',monospace;color:#b4b29d}.login-btn,.signup-btn,.secondary-cta,.primary-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:9px;padding:12px 16px;font-size:11px;font-weight:800;border:1px solid transparent;transition:transform .2s,background .2s}.login-btn{color:#ddd;background:transparent;border-color:#ffffff20}.signup-btn,.primary-cta{color:#15170f;background:var(--lime)}.signup-btn:hover,.primary-cta:hover{transform:translateY(-2px);background:#d7ff80}.mobile-menu{display:none;color:#fff;background:none;border:0}.hero{min-height:510px;display:grid;grid-template-columns:1fr .88fr;align-items:center;gap:5%;padding:65px 0 52px}.eyebrow{font:10px 'DM Mono',monospace;letter-spacing:1.8px;color:var(--lime);display:flex;align-items:center;gap:9px}.live-dot{width:6px;height:6px;background:var(--lime);border-radius:50%;box-shadow:0 0 12px #c6ff4d88}.hero h1{font-size:clamp(42px,5.3vw,73px);line-height:1.08;letter-spacing:-4px;margin:24px 0 20px;font-weight:800}.hero h1 span,.section-heading h2 span,.creator-banner h2 span,.how-section h2 span{color:var(--lime)}.hero-copy>p{max-width:460px;font-size:14px;line-height:1.9;color:#aaa8b6;margin:0}.hero-buttons{display:flex;gap:12px;margin-top:28px}.primary-cta{min-height:43px}.secondary-cta{background:#ffffff05;border-color:#ffffff25;color:#e4e2ed}.secondary-cta:hover,.login-btn:hover{background:#ffffff10}.hero-proof{display:flex;align-items:center;gap:13px;margin-top:35px;color:#9f9eab;font-size:10px;line-height:1.7}.hero-proof b{color:#f2f0f8}.avatar-stack{display:flex;padding-left:4px}.avatar-stack i{font-style:normal;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#7c3aed;border:2px solid var(--bg);margin-left:-5px;font-size:11px;font-weight:800}.avatar-stack i:nth-child(2){background:#2975a8}.avatar-stack i:nth-child(3){background:#a74879}.avatar-stack i:nth-child(4){background:#b17b32}.hero-art{position:relative;min-height:390px;display:flex;align-items:center;justify-content:center}.art-glow{position:absolute;width:270px;height:270px;border-radius:50%;background:#7445f14a;filter:blur(80px)}.poster{position:absolute;width:220px;height:310px;border-radius:14px;overflow:hidden;box-shadow:0 24px 70px #0008}.poster-back{background:linear-gradient(155deg,#24183d,#4e2672 45%,#f56c8e);transform:rotate(11deg) translate(49px,7px);padding:18px;color:#fff}.poster-mini,.poster-bottom{font:8px 'DM Mono',monospace;letter-spacing:1.5px}.poster-lines{position:absolute;left:17px;bottom:54px;font-size:47px;font-weight:800;line-height:.9;letter-spacing:-3px}.poster-bottom{position:absolute;bottom:19px;left:17px}.poster-front{background:linear-gradient(155deg,#101623 0%,#253b63 42%,#b7c9ff 43%,#493478 69%,#15141e 100%);border:1px solid #ffffff28;transform:rotate(-7deg) translate(-25px,0);padding:17px}.poster-top,.poster-foot{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;font:8px 'DM Mono',monospace;letter-spacing:1px}.poster-dot{width:6px;height:6px;background:var(--lime);border-radius:50%}.poster-orb{position:absolute;width:175px;height:175px;top:55px;left:23px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#f2d8ff,#8b6cdd 22%,#272c60 58%,#121626 72%);box-shadow:0 0 60px #ad87ff66}.poster-orb:after{content:'';position:absolute;inset:19px -13px;border:1px solid #ffffff60;border-radius:50%;transform:rotate(-30deg)}.poster-title{position:absolute;left:16px;bottom:56px;font-size:41px;font-weight:800;line-height:.84;letter-spacing:-2.5px;text-shadow:0 4px 18px #0008}.poster-title em{font-style:normal;color:var(--lime)}.poster-foot{position:absolute;bottom:18px;left:16px;right:16px;font-size:7px}.poster-foot span:first-child{display:flex;align-items:center;gap:3px}.play-float{position:absolute;top:47%;right:-19px;width:43px;height:43px;border-radius:50%;display:grid;place-items:center;color:#14150e;background:var(--lime);box-shadow:0 0 0 7px #c6ff4d1c}.floating-chip{position:absolute;display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid #ffffff20;border-radius:11px;background:#1a1922eF;box-shadow:0 10px 35px #0005;font-size:10px;color:#eee}.chip-top{top:52px;right:0;color:var(--lime)}.chip-bottom{bottom:30px;left:0}.chip-bottom>svg{color:var(--lime)}.chip-bottom small{display:block;margin-top:4px;color:#9f9ca9;font-size:9px}.stats-row{display:grid;grid-template-columns:repeat(3,1fr) 1.15fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0;gap:20px}.stats-row>div{display:flex;align-items:center;gap:12px}.stats-row strong{font:17px 'DM Mono',monospace;color:var(--lime)}.stats-row span{font-size:10px;color:#aaa8b5;line-height:1.7}.stats-note{border-left:1px solid var(--line);padding-left:25px}.stats-note svg{color:var(--lime)}.stats-note b{color:#f2f0f8}.market-section{padding:95px 0 90px}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px}.section-heading h2,.creator-banner h2,.how-section h2{font-size:clamp(28px,3.4vw,43px);letter-spacing:-1.8px;margin:15px 0 9px;line-height:1.15}.section-heading p,.creator-banner p{color:var(--muted);font-size:12px;line-height:1.8;margin:0}.view-all{display:flex;align-items:center;gap:7px;background:transparent;border:0;color:#d9d6e2;font-size:11px;font-weight:700;padding:10px 0}.market-controls{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:30px 0 23px}.category-tabs{display:flex;gap:7px;flex-wrap:wrap}.category-tab{background:transparent;border:1px solid #ffffff15;color:#a8a6b2;border-radius:7px;padding:10px 14px;font-size:10px;font-weight:700}.category-tab.selected{background:#c6ff4d12;border-color:#c6ff4d65;color:var(--lime)}.search-box{display:flex;align-items:center;gap:9px;width:min(310px,100%);padding:10px 12px;border:1px solid #ffffff1a;border-radius:8px;color:#898794;background:#17171c}.search-box input{min-width:0;width:100%;outline:0;border:0;color:#f6f5fa;background:transparent;font-size:10px}.search-box input::placeholder{color:#777582}.search-filter{flex-shrink:0}.edit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.edit-card{background:#17171c;border:1px solid #ffffff10;border-radius:12px;overflow:hidden;transition:transform .22s,border-color .22s}.edit-card:hover{transform:translateY(-4px);border-color:#c6ff4d48}.edit-cover{position:relative;aspect-ratio:1.24;overflow:hidden;padding:13px}.cover-violet{background:linear-gradient(135deg,#25183e,#6b3c96 48%,#e88ab1)}.cover-blue{background:linear-gradient(135deg,#0b1927,#225c7b 50%,#7aa7c9)}.cover-pink{background:linear-gradient(135deg,#45263b,#b96d95 48%,#f5c0ca)}.cover-orange{background:linear-gradient(135deg,#381c16,#c65b2f 52%,#f1c87d)}.cover-green{background:linear-gradient(135deg,#112d2a,#368879 52%,#d2e2bb)}.cover-lavender{background:linear-gradient(135deg,#2d2648,#8f81b9 52%,#e3d8f0)}.cover-noise{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#00000008 4px 5px);opacity:.7}.cover-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between}.cover-top>span{font:8px 'DM Mono',monospace;letter-spacing:1px;padding:6px 7px;background:#11101975;border:1px solid #ffffff30;border-radius:4px}.cover-top button{background:#11101960;border:1px solid #ffffff32;border-radius:50%;color:#fff;width:29px;height:29px;display:grid;place-items:center}.cover-art{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}.cover-index{position:absolute;top:52px;left:16px;font:9px 'DM Mono',monospace;opacity:.75}.cover-graphic{font-size:clamp(40px,6vw,76px);font-weight:800;letter-spacing:-4px;color:#ffffffba;text-shadow:0 7px 30px #0002;transform:rotate(-8deg)}.cover-title{position:absolute;left:15px;bottom:16px;font-size:12px;letter-spacing:1.4px;font-weight:800;text-shadow:0 3px 12px #0006}.duration{position:absolute;bottom:13px;right:13px;font:9px 'DM Mono',monospace;padding:5px 6px;border-radius:4px;background:#0909109c}.preview-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#11101960;border:1px solid #ffffff85;opacity:0;transition:opacity .2s}.edit-card:hover .preview-play{opacity:1}.card-body{padding:15px}.creator-line{display:flex;align-items:center;gap:6px}.creator-avatar{width:23px;height:23px;display:grid;place-items:center;border-radius:50%;background:#30283e;color:#d7c4ff;font-size:10px;font-weight:800}.creator-name{font-size:10px;color:#bdbac8}.verified{color:#9ddfff;display:flex}.likes{margin-left:auto;display:flex;align-items:center;gap:4px;font-size:9px;color:#898794}.card-body h3{font-size:13px;letter-spacing:.3px;margin:15px 0 16px}.card-footer{border-top:1px solid #ffffff12;padding-top:13px;display:flex;align-items:center;justify-content:space-between}.price{display:flex;align-items:center;gap:6px;color:var(--lime)}.price b{font-size:15px}.price small{font:8px 'DM Mono',monospace;color:#aaa8b5}.buy-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 11px;border:1px solid #ffffff25;border-radius:7px;background:#ffffff08;color:#f3f1f8;font-size:10px;font-weight:800}.buy-btn:hover{border-color:var(--lime);color:var(--lime)}.buy-btn.owned{color:var(--lime);border-color:#c6ff4d50}.empty-state{padding:50px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}.creator-banner{display:flex;align-items:center;gap:24px;padding:30px;border:1px solid #ffffff18;border-radius:15px;background:linear-gradient(110deg,#211b2e,#17171c 62%);margin-bottom:90px}.creator-banner-icon{width:61px;height:61px;flex-shrink:0;display:grid;place-items:center;border:1px solid #c6ff4d40;border-radius:15px;background:#c6ff4d0b;color:var(--lime)}.creator-banner>div:nth-child(2){flex:1}.creator-banner h2{font-size:25px;margin:10px 0}.creator-banner p{max-width:590px}.creator-banner>.primary-cta{flex-shrink:0}.how-section{text-align:center;padding:0 0 95px}.how-section>.eyebrow{justify-content:center}.how-section h2{margin:15px 0 36px}.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;text-align:left}.how-grid>div{position:relative;padding:24px;border:1px solid #ffffff14;border-radius:12px;background:#17171c}.how-grid>div>svg{display:block;color:var(--lime);width:23px;height:23px;margin-bottom:22px}.step-no{position:absolute;right:22px;top:22px;font:10px 'DM Mono',monospace;color:#777582}.how-grid h3{font-size:14px;margin:0 0 8px}.how-grid p{font-size:11px;color:var(--muted);line-height:1.8;margin:0}footer{border-top:1px solid var(--line);padding:26px 0 30px;display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap;color:#92909d;font-size:9px}footer>div{display:flex;gap:20px}footer a:hover{color:var(--lime)}.footer-brand{color:#f3f1f8}.footer-brand .brand-mark{width:32px;height:32px}.footer-brand small{font-size:7px}.toast{position:fixed;z-index:20;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;max-width:calc(100% - 28px);padding:14px 16px;border:1px solid #ffffff25;border-radius:10px;background:#24232d;box-shadow:0 15px 45px #0008;font-size:12px;color:#f6f5fa}.toast button{border:0;background:transparent;color:#aaa8b5;display:flex}.modal-backdrop{position:fixed;z-index:30;inset:0;display:grid;place-items:center;padding:18px;background:#050508c9;backdrop-filter:blur(8px)}.modal{position:relative;width:min(440px,100%);padding:32px;border:1px solid #ffffff22;border-radius:17px;background:#19181f;box-shadow:0 30px 100px #0009}.modal-close{position:absolute;right:15px;top:15px;display:grid;place-items:center;width:32px;height:32px;border:1px solid #ffffff17;border-radius:8px;background:transparent;color:#aaa8b5}.modal-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid #c6ff4d40;border-radius:12px;color:var(--lime);background:#c6ff4d0b;margin-bottom:22px}.modal h2{font-size:29px;letter-spacing:-1px;margin:12px 0}.modal h2 span{color:var(--lime)}.modal p{font-size:12px;line-height:1.8;color:var(--muted);margin:0 0 23px}.modal form{display:grid;gap:14px}.modal form label{display:grid;gap:7px;font-size:10px;font-weight:700;color:#d7d4e0}.modal input{width:100%;border:1px solid #ffffff20;border-radius:8px;padding:12px;background:#111116;color:#fff;outline:none;font-size:12px}.modal input:focus{border-color:#c6ff4d80}.full{width:100%;margin-top:3px;border:0}.modal-switch{text-align:center;color:var(--muted);font-size:10px;margin-top:19px}.modal-switch button{border:0;background:transparent;color:var(--lime);font-weight:800;font-size:10px}
+@media(max-width:900px){.app-shell{padding:0 4%}.nav{gap:18px}.hero{gap:1%;grid-template-columns:1.05fr .8fr}.hero h1{letter-spacing:-2.5px}.hero-art{transform:scale(.9)}.edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-row{grid-template-columns:repeat(2,1fr)}.stats-note{border-left:0;padding-left:0}.creator-banner{gap:16px;padding:23px}.creator-banner h2{font-size:21px}}@media(max-width:640px){.app-shell{padding:0 18px}.topbar{height:70px}.brand{font-size:14px}.brand-mark{width:34px;height:34px}.nav{display:none;position:absolute;z-index:10;top:69px;left:0;right:0;padding:20px;background:#17171d;border-bottom:1px solid var(--line);flex-direction:column;gap:22px}.nav.open{display:flex}.top-actions{gap:7px}.points-pill{padding:9px;gap:5px}.points-pill span{display:none}.login-btn{display:none}.signup-btn{padding:10px;font-size:10px}.mobile-menu{display:grid;place-items:center;padding:5px}.hero{padding:48px 0 25px;grid-template-columns:1fr;gap:4px}.hero h1{font-size:53px;letter-spacing:-3px;margin:19px 0}.hero-copy>p{font-size:12px}.hero-art{min-height:345px;transform:scale(.87);margin-top:-3px}.poster{width:205px;height:288px}.poster-orb{width:158px;height:158px}.poster-title{font-size:38px}.chip-top{right:0;top:32px}.chip-bottom{left:0;bottom:17px}.stats-row{gap:18px 12px;padding:19px 0}.stats-row>div{gap:8px}.stats-row strong{font-size:15px}.stats-row span{font-size:9px}.stats-note{padding-top:2px}.market-section{padding:64px 0}.section-heading{align-items:start}.section-heading h2{font-size:31px;letter-spacing:-1.5px}.section-heading p{font-size:10px}.view-all{white-space:nowrap;font-size:9px}.market-controls{align-items:stretch;flex-direction:column;margin:23px 0 17px}.category-tabs{gap:6px}.category-tab{padding:9px 11px;font-size:9px}.search-box{width:100%}.edit-grid{gap:11px}.edit-cover{aspect-ratio:.95;padding:9px}.cover-top>span{font-size:7px;letter-spacing:.4px}.cover-top button{width:25px;height:25px}.cover-graphic{font-size:44px;letter-spacing:-3px}.cover-title{font-size:9px;left:10px;bottom:13px;letter-spacing:.7px}.cover-index{top:42px;left:11px}.duration{bottom:9px;right:8px;font-size:8px}.card-body{padding:10px}.creator-line{gap:4px}.creator-avatar{width:20px;height:20px;font-size:9px}.creator-name{font-size:8px}.verified svg{width:12px}.likes{font-size:8px;gap:3px}.card-body h3{font-size:10px;margin:12px 0}.price{gap:4px}.price svg{width:13px}.price b{font-size:13px}.price small{font-size:7px}.buy-btn{padding:8px 7px;font-size:9px;gap:4px}.buy-btn svg{width:12px}.creator-banner{display:grid;grid-template-columns:48px 1fr;gap:14px;padding:19px;margin-bottom:65px}.creator-banner-icon{width:48px;height:48px;border-radius:12px}.creator-banner h2{font-size:20px;letter-spacing:-.8px}.creator-banner p{font-size:10px}.creator-banner>.primary-cta{grid-column:1/-1;width:100%}.how-section{padding-bottom:65px}.how-section h2{font-size:32px}.how-grid{grid-template-columns:1fr;gap:10px}.how-grid>div{padding:20px}.how-grid>div>svg{margin-bottom:13px}.how-grid p{max-width:310px}footer{justify-content:flex-start;gap:17px}footer>span{order:3;width:100%}footer>div{gap:14px;margin-left:auto}footer>small{width:100%}.modal{padding:26px 22px}.modal h2{font-size:26px}.toast{bottom:12px;font-size:11px;line-height:1.5}}
+
+/* Premium accounts storefront */
+.premium-section {
+  padding: 76px 0;
+  border-top: 1px solid var(--border, rgba(255,255,255,.08));
+}
+.premium-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.premium-heading h2 {
+  margin: 8px 0;
+  font-size: clamp(28px, 4vw, 42px);
+}
+.premium-heading h2 span {
+  color: var(--accent, #b9ff66);
+}
+.premium-heading p,
+.premium-card-content p {
+  color: var(--muted, #a1a1aa);
+}
+.premium-count,
+.premium-service,
+.premium-duration {
+  font-size: 12px;
+  letter-spacing: .08em;
+  color: var(--muted, #a1a1aa);
+}
+.premium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+.premium-card {
+  overflow: hidden;
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  border-radius: 16px;
+  background: var(--card, rgba(255,255,255,.025));
+}
+.premium-image {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  background: rgba(255,255,255,.04);
+}
+.premium-image-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--accent, #b9ff66);
+}
+.premium-card-content {
+  padding: 18px;
+}
+.premium-card-content h3 {
+  margin: 8px 0;
+}
+.premium-card-content p {
+  min-height: 42px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.premium-duration {
+  display: inline-block;
+  margin-top: 6px;
+  letter-spacing: 0;
+}
+.premium-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+.premium-card-footer .buy-btn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+.premium-empty {
+  padding: 20px;
+  color: var(--muted, #a1a1aa);
+  border: 1px dashed var(--border, rgba(255,255,255,.15));
+  border-radius: 12px;
+}
+.premium-orders {
+  margin-top: 42px;
+}
+.premium-orders-heading h3 {
+  margin-top: 8px;
+}
+.premium-order-list {
+  display: grid;
+  gap: 10px;
+}
+.premium-order {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  border-radius: 12px;
+}
+.premium-order > div {
+  display: grid;
+  gap: 6px;
+}
+.premium-order small {
+  color: var(--muted, #a1a1aa);
+}
+.premium-status {
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-pending { color: #eab308; }
+.status-completed { color: #22c55e; }
+.status-rejected { color: #f87171; }
+@media (max-width: 600px) {
+  .premium-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .premium-order {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
+/* PREMIUM ADMIN DASHBOARD DESIGN */
+
+.premium-admin {
+  margin: 36px 0 24px;
+  padding: clamp(20px, 3vw, 34px);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 22px;
+  background: radial-gradient(ellipse at top right, rgba(174,255,0,.07), transparent 38%), #151518;
+  color: #f5f5f7;
+  box-shadow: 0 18px 55px rgba(0,0,0,.22);
+}
+
+.premium-admin *,
+.premium-admin *::before,
+.premium-admin *::after {
+  box-sizing: border-box;
+}
+
+.premium-admin-heading {
+  margin-bottom: 30px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+.premium-admin-heading .eyebrow {
+  margin-bottom: 12px;
+  color: #b8ff35;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.premium-admin-heading h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: clamp(24px,3vw,34px);
+  line-height: 1.2;
+}
+
+.premium-admin-heading p {
+  margin: 0;
+  color: #a5a5b0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.premium-admin-subsection {
+  margin-top: 22px;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 16px;
+  background: #1b1b20;
+}
+
+.premium-admin-subsection h3 {
+  margin: 0 0 20px;
+  color: #f5f5f7;
+  font-size: 17px;
+}
+
+.premium-admin-subsection > p {
+  color: #a5a5b0;
+  font-size: 14px;
+}
+
+.premium-admin-form {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.premium-admin-form label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 9px;
+  color: #c9c9d2;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.premium-admin-form .premium-admin-full {
+  grid-column: 1 / -1;
+}
+
+.premium-admin-form input,
+.premium-admin-form textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #373740;
+  border-radius: 9px;
+  outline: none;
+  background: #111114;
+  color: #f7f7f9;
+  font: inherit;
+  font-size: 14px;
+}
+
+.premium-admin-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.premium-admin-form input::placeholder,
+.premium-admin-form textarea::placeholder {
+  color: #70707c;
+}
+
+.premium-admin-form input:focus,
+.premium-admin-form textarea:focus {
+  border-color: #b8ff35;
+  box-shadow: 0 0 0 3px rgba(184,255,53,.09);
+}
+
+.premium-admin button {
+  min-height: 40px;
+  padding: 10px 15px;
+  border: 1px solid #b8ff35;
+  border-radius: 9px;
+  background: #b8ff35;
+  color: #141414;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform .16s ease, background .16s ease;
+}
+
+.premium-admin button:hover {
+  transform: translateY(-1px);
+  background: #cbff70;
+}
+
+.premium-admin button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
+}
+
+.premium-admin-form > button {
+  justify-self: start;
+  min-height: 46px;
+  padding-inline: 24px;
+}
+
+.premium-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.premium-admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  background: #151519;
+}
+
+.premium-admin-item-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.premium-admin-item-info strong {
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 14px;
+}
+
+.premium-admin-item-info span,
+.premium-admin-item-info small {
+  overflow-wrap: anywhere;
+  color: #a5a5b0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.premium-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.premium-admin-actions button:last-child {
+  border-color: #65383b;
+  background: #342023;
+  color: #ffb7bb;
+}
+
+.premium-admin-actions button:last-child:hover {
+  background: #48282c;
+}
+
+@media (max-width: 640px) {
+  .premium-admin {
+    margin-top: 24px;
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .premium-admin-subsection {
+    padding: 16px;
+  }
+
+  .premium-admin-form {
+    grid-template-columns: minmax(0,1fr);
+    gap: 16px;
+  }
+
+  .premium-admin-form .premium-admin-full {
+    grid-column: auto;
+  }
+
+  .premium-admin-item {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .premium-admin-item > button {
+    align-self: flex-start;
+  }
+
+  .premium-admin-actions {
+    justify-content: flex-start;
+  }
+
+  .premium-admin-actions button {
+    flex: 1;
+  }
+}
+
+/* END PREMIUM ADMIN DASHBOARD DESIGN */

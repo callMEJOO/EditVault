@@ -1,0 +1,29 @@
+/* EditVault routed-page layout. The existing components are preserved and only the selected page is shown. */
+.app-shell[data-page]:not([data-page="home"]) > .hero,
+.app-shell[data-page]:not([data-page="home"]) > .stats-row { display: none !important; }
+.app-shell[data-page]:not([data-page="explore"]) > .market-section { display: none !important; }
+.app-shell[data-page]:not([data-page="scene-packs"]):not([data-page="clip-assembly"]) .evx-marketplace-sections { display: none !important; }
+.app-shell[data-page="scene-packs"] .evx-clip-assembly { display: none !important; }
+.app-shell[data-page="clip-assembly"] .evx-scene-packs { display: none !important; }
+.app-shell[data-page]:not([data-page="editlab"]):not([data-page="earn"]) .evlr-root { display: none !important; }
+.app-shell[data-page="editlab"] .evlr-rewards { display: none !important; }
+.app-shell[data-page="earn"] .evlr-editlab { display: none !important; }
+.app-shell[data-page]:not([data-page="accounts"]) > .premium-section { display: none !important; }
+.app-shell[data-page]:not([data-page="creators"]) > .creator-banner { display: none !important; }
+.app-shell[data-page]:not([data-page="how"]) > .how-section { display: none !important; }
+
+/* Give each route a small, consistent page-enter transition without changing its layout. */
+.app-shell[data-page] > .hero,
+.app-shell[data-page] > .market-section,
+.app-shell[data-page] > .stats-row,
+.app-shell[data-page] > .premium-section,
+.app-shell[data-page] > .creator-banner,
+.app-shell[data-page] > .how-section,
+.app-shell[data-page] .evx-section,
+.app-shell[data-page] .evlr-section { animation: evRouteEnter .26s ease both; }
+@keyframes evRouteEnter { from { opacity: .65; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+.app-shell[data-page="home"] > .hero { padding-top: clamp(32px, 5vw, 65px); }
+.app-shell[data-page="creators"] > .creator-banner { margin-top: clamp(30px, 6vw, 82px); margin-bottom: clamp(50px, 8vw, 120px); }
+.app-shell[data-page="how"] > .how-section { padding-top: clamp(36px, 5vw, 72px); padding-bottom: clamp(50px, 8vw, 110px); }
+@media (prefers-reduced-motion: reduce) { .app-shell[data-page] > .hero, .app-shell[data-page] > .market-section, .app-shell[data-page] > .stats-row, .app-shell[data-page] > .premium-section, .app-shell[data-page] > .creator-banner, .app-shell[data-page] > .how-section, .app-shell[data-page] .evx-section, .app-shell[data-page] .evlr-section { animation: none !important; } }

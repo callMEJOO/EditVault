@@ -1,0 +1,1693 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  Search,
+  Coins,
+  ShieldCheck,
+  Play,
+  Download,
+  Sparkles,
+  Clapperboard,
+  Menu,
+  X,
+  ArrowUpRight,
+  BadgeCheck,
+  Video,
+  UserRound,
+  Heart,
+  SlidersHorizontal,
+} from 'lucide-react';
+import './styles.css';
+import CreatorStudio from './CreatorStudio.jsx';
+
+import PublicCreatorProfile from './PublicCreatorProfile.jsx';
+const API_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '');
+
+const categories = ['All edits', 'Anime', 'Cinematic', 'Aesthetic', 'Gaming', 'AMV', 'Other'];
+
+function App() {
+  const [category, setCategory] = useState('All edits');
+  const [query, setQuery] = useState('');
+  const [points, setPoints] = useState(0);
+  const [edits, setEdits] = useState([]);
+  const [purchased, setPurchased] = useState([]);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [modal, setModal] = useState('');
+  const [mobileNav, setMobileNav] = useState(false);
+  const [previewEdit, setPreviewEdit] = useState(null);
+  const [publicCreatorId, setPublicCreatorId] = useState(null);
+  const [creatorStudioOpen, setCreatorStudioOpen] = useState(false);
+
+  // Authentication state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Premium accounts
+  const [premiumProducts, setPremiumProducts] = useState([]);
+  const [premiumOrders, setPremiumOrders] = useState([]);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [premiumBuying, setPremiumBuying] = useState('');
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [premiumForm, setPremiumForm] = useState({
+    title: '',
+    serviceName: '',
+    description: '',
+    duration: '',
+    pricePoints: '',
+    imageUrl: '',
+  });
+
+  // Restore the saved session when the page loads.
+  useEffect(() => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    const restoreSession = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          localStorage.removeItem('editvault_token');
+          localStorage.removeItem('editvault_user');
+
+          if (!cancelled) setUser(null);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setUser(data.user || data);
+        }
+      } catch (error) {
+        console.error('Session restore failed:', error);
+      }
+    };
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load published edits from the backend and keep wallet/library in sync with the account.
+  useEffect(() => {
+    let cancelled = false;
+    const loadEdits = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/edits`);
+        if (!response.ok) throw new Error('Could not load edits.');
+        const data = await response.json();
+        const rows = Array.isArray(data.edits) ? data.edits : [];
+        if (!cancelled) {
+          setEdits(rows.map((row, index) => ({
+            ...row,
+            id: row.id,
+            previewUrl: row.has_preview
+              ? `${API_URL}/api/edits/${row.id}/preview`
+              : null,
+            creator: row.creator_name || 'creator',
+            verified: row.verification_status === 'verified',
+            price: Number(row.price_points || 0),
+            likes: 'â€”',
+            tone: ['violet', 'blue', 'pink', 'orange', 'green', 'lavender'][index % 6],
+            tag: 'ORIGINAL EDIT',
+            length: '--:--',
+          })));
+        }
+      } catch (error) {
+        console.error('Loading edits failed:', error);
+        if (!cancelled) setNotice(error.message || 'Could not load edits from the server.');
+      }
+    };
+    loadEdits();
+    window.addEventListener('editvault:refresh-edits', loadEdits); return () => { cancelled = true; window.removeEventListener('editvault:refresh-edits', loadEdits); };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAccountData = async () => {
+      const token = localStorage.getItem('editvault_token');
+      if (!user || !token) {
+        setPoints(0);
+        setPurchased([]);
+        return;
+      }
+      const headers = { Authorization: `Bearer ${token}` };
+      try {
+        const [walletResponse, libraryResponse] = await Promise.all([
+          fetch(`${API_URL}/api/wallet`, { headers }),
+          fetch(`${API_URL}/api/edits/mine/library`, { headers }),
+        ]);
+        if (!walletResponse.ok) throw new Error('Could not load your wallet.');
+        if (!libraryResponse.ok) throw new Error('Could not load your library.');
+        const walletData = await walletResponse.json();
+        const libraryData = await libraryResponse.json();
+        if (!cancelled) {
+          setPoints(Number(walletData.balance || 0));
+          setPurchased((libraryData.library || []).map((item) => item.id));
+        }
+      } catch (error) {
+        console.error('Loading wallet/library failed:', error);
+        if (!cancelled) setNotice(error.message || 'Could not load your account data.');
+      }
+    };
+    loadAccountData();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPremiumProducts = async () => {
+      setPremiumLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/api/premium`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || 'Could not load premium products.');
+        }
+        if (!cancelled) {
+          setPremiumProducts(Array.isArray(data.products) ? data.products : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Loading premium products failed:', error);
+          setNotice(error.message || 'Could not load premium products.');
+        }
+      } finally {
+        if (!cancelled) setPremiumLoading(false);
+      }
+    };
+
+    loadPremiumProducts();
+    return () => { cancelled = true; };
+  }, []);
+
+  const loadPremiumOrders = async () => {
+    const token = localStorage.getItem('editvault_token');
+    if (!user || !token) {
+      setPremiumOrders([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium/orders/mine`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load your premium orders.');
+      }
+      setPremiumOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      console.error('Loading premium orders failed:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadPremiumOrders();
+  }, [user]);
+
+  const buyPremium = async (product) => {
+    if (!user) {
+      setNotice('Please log in before ordering a premium account.');
+      openAuth('login');
+      return;
+    }
+
+    if (premiumBuying) return;
+
+    const token = localStorage.getItem('editvault_token');
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      logout();
+      return;
+    }
+
+    const price = Number(product.price_points || 0);
+    if (points < price) {
+      setNotice(`You need ${price - points} more points for this product.`);
+      return;
+    }
+
+    setPremiumBuying(product.id);
+    setNotice('');
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/premium/${product.id}/order`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Could not place your order.');
+      }
+
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        setPoints(Number(walletData.balance || 0));
+      }
+
+      await loadPremiumOrders();
+      setNotice('Order placed! Your order is waiting for admin fulfillment.');
+    } catch (error) {
+      setNotice(error.message || 'Could not place your order.');
+    } finally {
+      setPremiumBuying('');
+    }
+  };
+
+  const loadAdminOrders = async () => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!user || user.role !== 'admin' || !token) {
+      setAdminOrders([]);
+      return;
+    }
+
+    setAdminLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load admin orders.');
+      }
+
+      setAdminOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      setNotice(error.message || 'Could not load admin orders.');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const refreshPremiumProducts = async () => {
+    const isAdmin = user?.role === 'admin';
+    const token = localStorage.getItem('editvault_token');
+    const endpoint = isAdmin
+      ? `${API_URL}/api/premium/admin/products`
+      : `${API_URL}/api/premium`;
+
+    const response = await fetch(endpoint, {
+      headers: isAdmin && token
+        ? { Authorization: `Bearer ${token}` }
+        : {},
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not refresh products.');
+    }
+
+    setPremiumProducts(Array.isArray(data.products) ? data.products : []);
+  };
+
+  const createPremiumProduct = async (event) => {
+    event.preventDefault();
+
+    if (adminSaving) return;
+
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      return;
+    }
+
+    const price = Number(premiumForm.pricePoints);
+
+    if (
+      !premiumForm.title.trim() ||
+      !premiumForm.serviceName.trim() ||
+      !Number.isInteger(price) ||
+      price < 1
+    ) {
+      setNotice('Enter a title, service name, and valid price in points.');
+      return;
+    }
+
+    setAdminSaving(true);
+    setNotice('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: premiumForm.title.trim(),
+          serviceName: premiumForm.serviceName.trim(),
+          description: premiumForm.description.trim(),
+          duration: premiumForm.duration.trim(),
+          pricePoints: price,
+          imageUrl: premiumForm.imageUrl.trim() || null,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not create product.');
+      }
+
+      setPremiumForm({
+        title: '',
+        serviceName: '',
+        description: '',
+        duration: '',
+        pricePoints: '',
+        imageUrl: '',
+      });
+
+      await refreshPremiumProducts();
+      setNotice('Premium product added successfully.');
+    } catch (error) {
+      setNotice(error.message || 'Could not create product.');
+    } finally {
+      setAdminSaving(false);
+    }
+  };
+
+  const setPremiumProductStatus = async (product, status) => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/premium/${product.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not update product.');
+      }
+
+      await refreshPremiumProducts();
+
+      setNotice(
+        status === 'hidden'
+          ? 'Product hidden.'
+          : 'Product is available again.'
+      );
+    } catch (error) {
+      setNotice(error.message || 'Could not update product.');
+    }
+  };
+
+  const updatePremiumOrder = async (order, status) => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      return;
+    }
+
+    const action =
+      status === 'completed'
+        ? 'mark this order as completed'
+        : 'reject this order and refund its points';
+
+    if (!window.confirm(`Are you sure you want to ${action}?`)) return;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/premium/orders/${order.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not update order.');
+      }
+
+      await loadAdminOrders();
+      await loadPremiumOrders();
+
+      setNotice(
+        status === 'completed'
+          ? 'Order marked as completed.'
+          : 'Order rejected. Points refund processed.'
+      );
+    } catch (error) {
+      setNotice(error.message || 'Could not update order.');
+    }
+  };
+
+  useEffect(() => {
+    loadAdminOrders();
+  }, [user]);
+
+  const filtered = useMemo(
+    () =>
+      edits.filter(
+        (edit) =>
+          (category === 'All edits' || edit.category === category) &&
+          `${edit.title} ${edit.creator} ${edit.category}`
+            .toLowerCase()
+            .includes(query.toLowerCase())
+      ),
+    [category, query]
+  );
+
+  const resetAuthForm = () => {
+    setEmail('');
+    setPassword('');
+    setDisplayName('');
+    setAuthLoading(false);
+  };
+
+  const openAuth = (type) => {
+    resetAuthForm();
+    setNotice('');
+    setModal(type);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('editvault_token');
+    localStorage.removeItem('editvault_user');
+
+    setUser(null);
+    resetAuthForm();
+    setModal('');
+
+    setNotice('You have been logged out successfully.');
+  };
+
+  // Real signup/login API integration.
+  const submitAuth = async (event) => {
+    event.preventDefault();
+
+    if (authLoading) return;
+
+    const isSignup = modal === 'signup';
+
+    if (isSignup && !displayName.trim()) {
+      setNotice('Please enter your display name.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setNotice('Password must be at least 8 characters.');
+      return;
+    }
+
+    setAuthLoading(true);
+    setNotice('');
+
+    try {
+      const endpoint = isSignup
+        ? '/api/auth/signup'
+        : '/api/auth/login';
+
+      const payload = isSignup
+        ? {
+            displayName: displayName.trim(),
+            email: email.trim(),
+            password,
+          }
+        : {
+            email: email.trim(),
+            password,
+          };
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            (response.status === 409
+              ? 'An account with this email already exists.'
+              : 'Authentication failed. Please try again.')
+        );
+      }
+
+      if (!data.token || !data.user) {
+        throw new Error(
+          'The server response is missing the account or authentication token.'
+        );
+      }
+
+      // Save the real authentication session.
+      localStorage.setItem('editvault_token', data.token);
+      localStorage.setItem('editvault_user', JSON.stringify(data.user));
+
+      setUser(data.user);
+      setModal('');
+      resetAuthForm();
+
+      setNotice(
+        isSignup
+          ? 'Your EditVault account was created successfully!'
+          : 'Welcome back! You are now logged in.'
+      );
+    } catch (error) {
+      console.error('Authentication error:', error);
+
+      setNotice(
+        error.message ||
+          'Could not connect to the server. Make sure the backend is running.'
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const buy = async (edit) => {
+    if (!user) {
+      setNotice('Please log in before unlocking an edit.');
+      openAuth('login');
+      return;
+    }
+    if (purchased.includes(edit.id)) {
+      setNotice(`You already own "${edit.title}".`);
+      return;
+    }
+    if (purchaseLoading) return;
+
+    const token = localStorage.getItem('editvault_token');
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      logout();
+      return;
+    }
+
+    setPurchaseLoading(true);
+    setNotice('');
+    try {
+      const response = await fetch(`${API_URL}/api/edits/${edit.id}/purchase`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || data.message || 'Purchase failed.');
+
+      setPurchased((current) => current.includes(edit.id) ? current : [...current, edit.id]);
+      // Fetch the server's balance after purchase; never calculate a trusted balance in the browser.
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        setPoints(Number(walletData.balance || 0));
+      }
+      setNotice(`Unlocked "${edit.title}". It is now in your library.`);
+    } catch (error) {
+      setNotice(error.message || 'Purchase failed. Please try again.');
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <CreatorStudio open={creatorStudioOpen} onClose={() => setCreatorStudioOpen(false)} user={user} onNotice={setNotice} />
+      <header className="topbar">
+        <a className="brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={20} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>CREATOR MARKETPLACE</small>
+          </span>
+        </a>
+
+        <nav className={mobileNav ? 'nav open' : 'nav'}>
+          <a
+            className="nav-active"
+            href="#explore"
+            onClick={() => setMobileNav(false)}
+          >
+            Explore
+          </a>
+
+          <a href="#creators" onClick={() => setMobileNav(false)}>
+            Creators
+          </a>
+
+          <a href="#how" onClick={() => setMobileNav(false)}>
+            How it works
+          </a>
+        </nav>
+
+        <div className="top-actions">
+          <button
+            className="points-pill"
+            onClick={() => setModal('points')}
+          >
+            <Coins size={16} />
+            <b>{points}</b>
+            <span>PTS</span>
+          </button>
+
+          {user ? (
+            <>
+              <span
+                className="creator-name"
+                title={user.email || ''}
+              >
+                {user.displayName || user.display_name || user.email}
+              </span>
+
+              <button className="login-btn" onClick={logout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="login-btn"
+                onClick={() => openAuth('login')}
+              >
+                Log in
+              </button>
+
+              <button
+                className="signup-btn"
+                onClick={() => openAuth('signup')}
+              >
+                Join free <ArrowUpRight size={15} />
+              </button>
+            </>
+          )}
+
+          <button
+            className="mobile-menu"
+            onClick={() => setMobileNav((value) => !value)}
+            aria-label="Toggle menu"
+          >
+            {mobileNav ? <X /> : <Menu />}
+          </button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section className="hero">
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <span className="live-dot" />
+              MADE BY CREATORS. OWNED BY YOU.
+            </div>
+
+            <h1>
+              Your next edit.
+              <br />
+              <span>One click away.</span>
+            </h1>
+
+            <p>
+              Discover original edits from independent creators.
+              Support the talent, unlock the full-quality video,
+              and make it yours.
+            </p>
+
+            <div className="hero-buttons">
+              <a className="primary-cta" href="#explore">
+                Explore edits <ArrowUpRight size={17} />
+              </a>
+
+              <button
+                className="secondary-cta"
+                onClick={() =>
+                  user ? setCreatorStudioOpen(true) : openAuth('signup')
+                }
+              >
+                <Video size={16} /> I'm a creator
+              </button>
+            </div>
+
+            <div className="hero-proof">
+              <div className="avatar-stack">
+                <i>k</i>
+                <i>n</i>
+                <i>m</i>
+                <i>z</i>
+              </div>
+
+              <span>
+                <b>Creator-first</b>
+                <br />
+                A marketplace built on credit, not reposts.
+              </span>
+            </div>
+          </div>
+
+          <div className="hero-art">
+            <div className="art-glow" />
+
+            <div className="poster poster-back">
+              <span className="poster-mini">EV / 002</span>
+              <div className="poster-lines">
+                NO
+                <br />
+                LIMITS
+              </div>
+              <span className="poster-bottom">
+                ORIGINAL CREATOR EDIT
+              </span>
+            </div>
+
+            <div className="poster poster-front">
+              <div className="poster-top">
+                <span>FEATURED DROP</span>
+                <span className="poster-dot" />
+              </div>
+
+              <div className="poster-orb" />
+
+              <div className="poster-title">
+                AFTER
+                <br />
+                <em>DARK</em>
+              </div>
+
+              <div className="poster-foot">
+                <span>
+                  kairo.fx <BadgeCheck size={12} />
+                </span>
+                <span>00:18 / 4K</span>
+              </div>
+
+              <div className="play-float">
+                <Play size={17} fill="currentColor" />
+              </div>
+            </div>
+
+            <div className="floating-chip chip-top">
+              <Sparkles size={15} /> Creator verified
+            </div>
+
+            <div className="floating-chip chip-bottom">
+              <Coins size={16} />
+              <span>
+                <b>80 points</b>
+                <small>Unlock original</small>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="stats-row">
+          <div>
+            <strong>01</strong>
+            <span>Find your style</span>
+          </div>
+
+          <div>
+            <strong>02</strong>
+            <span>Earn points from rewarded ads</span>
+          </div>
+
+          <div>
+            <strong>03</strong>
+            <span>Unlock the original</span>
+          </div>
+
+          <div className="stats-note">
+            <ShieldCheck size={18} />
+            <span>
+              Credit the creator.
+              <br />
+              <b>Always.</b>
+            </span>
+          </div>
+        </section>
+
+        <section className="market-section" id="explore">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">THE DROP ZONE / 001</div>
+              <h2>
+                Find your <span>next favorite.</span>
+              </h2>
+              <p>Handpicked edits. Real creators. Original quality.</p>
+            </div>
+
+            <button
+              className="view-all"
+              onClick={() => {
+                setCategory('All edits');
+                setQuery('');
+              }}
+            >
+              View all edits <ArrowUpRight size={15} />
+            </button>
+          </div>
+
+          <div className="market-controls">
+            <div className="category-tabs">
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setCategory(item)}
+                  className={
+                    category === item
+                      ? 'category-tab selected'
+                      : 'category-tab'
+                  }
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <label className="search-box">
+              <Search size={17} />
+
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search edits or creators..."
+              />
+
+              <SlidersHorizontal
+                size={16}
+                className="search-filter"
+              />
+            </label>
+          </div>
+
+          <div className="edit-grid">
+            {filtered.map((edit, index) => (
+              <article className="edit-card" key={edit.id}>
+                <div className="edit-cover">
+                  {edit.previewUrl ? (
+                    <video
+                      className="edit-preview-video"
+                      src={edit.previewUrl}
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      aria-label={`Video preview: ${edit.title}`}
+                      onClick={() => setPreviewEdit(edit)}
+                      style={{ cursor: 'pointer' }}
+                      onMouseEnter={(event) => {
+                        const playback = event.currentTarget.play();
+                        if (playback && typeof playback.catch === 'function') playback.catch(() => {});
+                      }}
+                      onMouseLeave={(event) => {
+                        event.currentTarget.pause();
+                        try { event.currentTarget.currentTime = 0; } catch {}
+                      }}
+                    />
+                  ) : (
+                    <div className="edit-no-preview">No preview available</div>
+                  )}
+                  <div className="cover-noise" />
+
+                  <div className="cover-top">
+                    <span>PUBLIC PREVIEW</span>
+                    <button
+                      aria-label="Save edit"
+                      onClick={() => {
+                        if (!user) {
+                          setNotice('Sign in to save edits to your favorites.');
+                          openAuth('login');
+                        } else {
+                          setNotice('Favorites are coming soon.');
+                        }
+                      }}
+                    >
+                      <Heart size={16} />
+                    </button>
+                  </div>
+
+                  <div className="cover-art">
+                    <span className="cover-title">{edit.title}</span>
+                  </div>
+
+                  <span className="duration">PREVIEW</span>
+
+                  <button
+                    className="preview-play"
+                    aria-label={`Preview ${edit.title}`}
+                    onClick={() => {
+                      if (edit.previewUrl) setPreviewEdit(edit);
+                      else setNotice('Preview is not available for this edit yet.');
+                    }}
+                  >
+                    <Play size={16} fill="currentColor" />
+                  </button>
+                </div>
+
+                <div className="card-body">
+                  <div className="creator-line">
+                    <span className="creator-avatar">
+                      {edit.creator[0]}
+                    </span>
+
+                    <button type="button" className="creator-name creator-profile-link" onClick={() => { if (edit.creator_id) setPublicCreatorId(edit.creator_id); else setNotice("Creator profile is not available."); }}>@{edit.creator}</button>
+
+                    {edit.verified && (
+                      <span
+                        className="verified"
+                        title="Verified creator"
+                      >
+                        <BadgeCheck size={15} />
+                      </span>
+                    )}
+
+                    <span className="likes">
+                      <Heart size={12} />
+                      {edit.likes}
+                    </span>
+                  </div>
+
+                  <h3>{edit.title}</h3>
+
+                  <div className="card-footer">
+                    <span className="price">
+                      <Coins size={16} />
+                      <b>{edit.price}</b>
+                      <small>PTS</small>
+                    </span>
+
+                    <button
+                      className={
+                        purchased.includes(edit.id)
+                          ? 'buy-btn owned'
+                          : 'buy-btn'
+                      }
+                      onClick={() => buy(edit)}
+                    >
+                      {purchased.includes(edit.id) ? (
+                        <>
+                          <Download size={14} /> Owned
+                        </>
+                      ) : purchaseLoading ? (
+                        'Processing...'
+                      ) : (
+                        <>
+                          Unlock <ArrowUpRight size={14} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="empty-state">
+              No public previews yet for this search. Try another category, or check back after creators upload preview clips.
+            </div>
+          )}
+        </section>
+
+        <section className="premium-section" id="premium">
+          <div className="premium-heading">
+            <div>
+              <div className="eyebrow">EXCLUSIVE ACCESS</div>
+              <h2>Premium <span>Accounts.</span></h2>
+              <p>Place an order with points. The admin will handle delivery.</p>
+            </div>
+            <span className="premium-count">
+              {premiumProducts.length} AVAILABLE
+            </span>
+          </div>
+
+          {premiumLoading ? (
+            <div className="premium-empty">Loading premium products...</div>
+          ) : premiumProducts.length === 0 ? (
+            <div className="premium-empty">
+              No premium products are available right now.
+            </div>
+          ) : (
+            <div className="premium-grid">
+              {premiumProducts.map((product) => (
+                <article className="premium-card" key={product.id}>
+                  {product.image_url ? (
+                    <img
+                      className="premium-image"
+                      src={product.image_url}
+                      alt={product.title}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="premium-image premium-image-placeholder">
+                      <ShieldCheck size={34} />
+                    </div>
+                  )}
+
+                  <div className="premium-card-content">
+                    <span className="premium-service">
+                      {product.service_name}
+                    </span>
+                    <h3>{product.title}</h3>
+                    <p>{product.description || 'Premium digital access.'}</p>
+                    {product.duration && (
+                      <span className="premium-duration">
+                        {product.duration}
+                      </span>
+                    )}
+
+                    <div className="premium-card-footer">
+                      <span className="price">
+                        <Coins size={16} />
+                        <b>{Number(product.price_points || 0)}</b>
+                        <small>PTS</small>
+                      </span>
+
+                      <button
+                        className="buy-btn"
+                        disabled={Boolean(premiumBuying)}
+                        onClick={() => buyPremium(product)}
+                      >
+                        {premiumBuying === product.id
+                          ? 'Processing...'
+                          : 'Order now'}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {user && (
+            <div className="premium-orders">
+              <div className="premium-orders-heading">
+                <div className="eyebrow">YOUR ACTIVITY</div>
+                <h3>My premium orders</h3>
+              </div>
+
+              {premiumOrders.length === 0 ? (
+                <p className="premium-empty">You haven't placed any orders yet.</p>
+              ) : (
+                <div className="premium-order-list">
+                  {premiumOrders.map((order) => (
+                    <div className="premium-order" key={order.id}>
+                      <div>
+                        <strong>
+                          {order.title || order.service_name || 'Premium order'}
+                        </strong>
+                        <small>
+                          {order.created_at
+                            ? new Date(order.created_at).toLocaleDateString()
+                            : ''}
+                          {' آ· '}
+                          {Number(order.price_points || 0)} points
+                        </small>
+                      </div>
+                      <span className={`premium-status status-${order.status}`}>
+                        {order.status === 'pending'
+                          ? 'Pending'
+                          : order.status === 'completed'
+                          ? 'Completed'
+                          : order.status === 'rejected'
+                          ? 'Rejected / refunded'
+                          : order.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {user?.role === 'admin' && (
+            <div className="premium-admin">
+              <div className="premium-admin-heading">
+                <div className="eyebrow">ADMIN CONTROL</div>
+                <h2>Premium Accounts Dashboard</h2>
+                <p>Manage premium products and customer orders.</p>
+              </div>
+
+              <div className="premium-admin-subsection">
+                <h3>Add a premium product</h3>
+
+                <form className="premium-admin-form" onSubmit={createPremiumProduct}>
+                  <label>
+                    Product title
+                    <input
+                      value={premiumForm.title}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, title: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Service name
+                    <input
+                      value={premiumForm.serviceName}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, serviceName: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Duration
+                    <input
+                      value={premiumForm.duration}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, duration: e.target.value })}
+                      placeholder="30 days"
+                    />
+                  </label>
+
+                  <label>
+                    Price in points
+                    <input
+                      type="number"
+                      min="1"
+                      value={premiumForm.pricePoints}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, pricePoints: e.target.value })}
+                      required
+                    />
+                  </label>
+
+                  <label className="premium-admin-full">
+                    Image URL
+                    <input
+                      type="url"
+                      value={premiumForm.imageUrl}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, imageUrl: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </label>
+
+                  <label className="premium-admin-full">
+                    Description
+                    <textarea
+                      rows="3"
+                      value={premiumForm.description}
+                      onChange={(e) => setPremiumForm({ ...premiumForm, description: e.target.value })}
+                    />
+                  </label>
+
+                  <button type="submit" disabled={adminSaving}>
+                    {adminSaving ? 'Saving...' : 'Add product'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="premium-admin-subsection">
+                <h3>Manage products</h3>
+
+                {premiumProducts.length === 0 ? (
+                  <p>No products found.</p>
+                ) : (
+                  <div className="premium-admin-list">
+                    {premiumProducts.map((product) => (
+                      <div className="premium-admin-item" key={product.id}>
+                        <div className="premium-admin-item-info">
+                          <strong>{product.title}</strong>
+                          <span>
+                            {product.service_name || 'Premium'} · {product.price_points} points
+                          </span>
+                          <small>Status: {product.status || 'available'}</small>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPremiumProductStatus(
+                              product,
+                              product.status === 'hidden' ? 'available' : 'hidden'
+                            )
+                          }
+                        >
+                          {product.status === 'hidden' ? 'Show product' : 'Hide product'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="premium-admin-subsection">
+                <h3>Customer orders</h3>
+
+                {adminLoading ? (
+                  <p>Loading orders...</p>
+                ) : adminOrders.length === 0 ? (
+                  <p>No customer orders yet.</p>
+                ) : (
+                  <div className="premium-admin-list">
+                    {adminOrders.map((order) => (
+                      <div className="premium-admin-item" key={order.id}>
+                        <div className="premium-admin-item-info">
+                          <strong>
+                            {order.title || order.service_name || 'Premium order'}
+                          </strong>
+                          <span>
+                            Customer: {order.buyer_name || order.buyer_email || order.user_id || 'Unknown'}
+                          </span>
+                          <span>{Number(order.price_points || 0)} points</span>
+                          <small>Status: {order.status}</small>
+                        </div>
+
+                        {order.status === 'pending' && (
+                          <div className="premium-admin-actions">
+                            <button
+                              type="button"
+                              onClick={() => updatePremiumOrder(order, 'completed')}
+                            >
+                              Complete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updatePremiumOrder(order, 'rejected')}
+                            >
+                              Reject &amp; refund
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="creator-banner" id="creators">
+          <div className="creator-banner-icon">
+            <Clapperboard size={28} />
+          </div>
+
+          <div>
+            <div className="eyebrow">
+              FOR THE ONES BEHIND THE EDIT
+            </div>
+
+            <h2>
+              Your work deserves <span>more than a repost.</span>
+            </h2>
+
+            <p>
+              Publish your edits, build a verified profile, and earn
+              points every time someone unlocks your work.
+            </p>
+          </div>
+
+          <button
+            className="primary-cta"
+            onClick={() =>
+              user
+                ? setCreatorStudioOpen(true)
+                : openAuth('signup')
+            }
+          >
+            Become a creator <ArrowUpRight size={17} />
+          </button>
+        </section>
+
+        <section className="how-section" id="how">
+          <div className="eyebrow">SIMPLE BY DESIGN</div>
+
+          <h2>
+            Good edits. <span>Good credit.</span>
+          </h2>
+
+          <div className="how-grid">
+            <div>
+              <span className="step-no">01</span>
+              <Search />
+              <h3>Discover</h3>
+              <p>
+                Browse previews and find the edit that fits your vision.
+              </p>
+            </div>
+
+            <div>
+              <span className="step-no">02</span>
+              <Coins />
+              <h3>Earn points</h3>
+              <p>
+                Complete eligible rewarded ads to build your balance.
+              </p>
+            </div>
+
+            <div>
+              <span className="step-no">03</span>
+              <Download />
+              <h3>Unlock & download</h3>
+              <p>
+                Spend points to access the original file from your library.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <a className="brand footer-brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={18} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>CREATOR MARKETPLACE</small>
+          </span>
+        </a>
+
+        <span>Built for the people who make the edits.</span>
+
+        <div>
+          <a href="#how">How it works</a>
+          <a href="#creators">Creators</a>
+          <a href="mailto:hello@editvault.example">Contact</a>
+        </div>
+
+        <small>آ© 2026 EditVault آ· Respect the original.</small>
+      </footer>
+
+      {previewEdit && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setPreviewEdit(null)}
+        >
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Preview ${previewEdit.title}`}
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: 'min(900px, 94vw)', maxWidth: '900px' }}
+          >
+            <button
+              className="modal-close"
+              onClick={() => setPreviewEdit(null)}
+              aria-label="Close preview"
+            >
+              <X />
+            </button>
+
+            <div className="eyebrow">EDITVAULT / VIDEO PREVIEW</div>
+
+            <h2 style={{ marginBottom: '16px' }}>
+              {previewEdit.title}
+            </h2>
+
+            <video
+              key={previewEdit.id}
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+              style={{
+                display: 'block',
+                width: '100%',
+                maxHeight: '70vh',
+                background: '#000',
+                borderRadius: '12px',
+              }}
+              src={previewEdit.previewUrl}
+            >
+              Your browser does not support video playback.
+            </video>
+
+            <p style={{ marginTop: '12px' }}>
+              Preview only آ· Unlock the edit to access the original.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <PublicCreatorProfile creatorId={publicCreatorId} onClose={() => setPublicCreatorId(null)} onPreview={(edit) => { setPublicCreatorId(null); setPreviewEdit(edit); }} />
+
+      {notice && (
+        <div className="toast" role="status">
+          {notice}
+
+          <button
+            onClick={() => setNotice('')}
+            aria-label="Dismiss"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {modal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            if (!authLoading) setModal('');
+          }}
+        >
+          <div
+            className="modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={() => {
+                if (!authLoading) setModal('');
+              }}
+              aria-label="Close"
+              disabled={authLoading}
+            >
+              <X />
+            </button>
+
+            {modal === 'points' ? (
+              <>
+                <div className="modal-icon">
+                  <Coins />
+                </div>
+
+                <div className="eyebrow">YOUR WALLET</div>
+
+                <h2>
+                  {points} <span>points</span>
+                </h2>
+
+                <p>
+                  Earn points by completing verified rewarded ads.
+                  Ad rewards will be enabled once the provider's
+                  server-side verification is connected.
+                </p>
+
+                <button
+                  className="primary-cta full"
+                  onClick={() =>
+                    setNotice(
+                      'Reward ads are not connected in this preview yet.'
+                    )
+                  }
+                >
+                  Reward ads coming soon <ArrowUpRight size={16} />
+                </button>
+              </>
+            ) : modal === 'creator' ? (
+              <>
+                <div className="modal-icon">
+                  <Clapperboard />
+                </div>
+
+                <div className="eyebrow">CREATOR ACCESS</div>
+
+                <h2>
+                  Make it. <span>Own it.</span>
+                </h2>
+
+                <p>
+                  Creator accounts can upload original edits, set
+                  point prices, and request manual verification.
+                  Sign up first, then submit your TikTok profile
+                  for review.
+                </p>
+
+                <button
+                  className="primary-cta full"
+                  onClick={() => openAuth('signup')}
+                >
+                  Create creator account <ArrowUpRight size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="modal-icon">
+                  <UserRound />
+                </div>
+
+                <div className="eyebrow">
+                  {modal === 'login'
+                    ? 'WELCOME BACK'
+                    : 'YOUR CREATOR JOURNEY STARTS HERE'}
+                </div>
+
+                <h2>
+                  {modal === 'login'
+                    ? 'Good to see you.'
+                    : 'Join the vault.'}
+                </h2>
+
+                <p>
+                  {modal === 'login'
+                    ? 'Log in to access your library and points.'
+                    : 'Create an account to unlock edits or publish your own.'}
+                </p>
+
+                <form onSubmit={submitAuth}>
+                  {modal === 'signup' && (
+                    <label>
+                      Display name
+                      <input
+                        required
+                        type="text"
+                        autoComplete="name"
+                        value={displayName}
+                        onChange={(event) =>
+                          setDisplayName(event.target.value)
+                        }
+                        placeholder="Your creator name"
+                        minLength={2}
+                        maxLength={60}
+                      />
+                    </label>
+                  )}
+
+                  <label>
+                    Email address
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) =>
+                        setEmail(event.target.value)
+                      }
+                      placeholder="you@example.com"
+                    />
+                  </label>
+
+                  <label>
+                    Password
+                    <input
+                      required
+                      minLength={8}
+                      type="password"
+                      autoComplete={
+                        modal === 'login'
+                          ? 'current-password'
+                          : 'new-password'
+                      }
+                      value={password}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
+                      placeholder="At least 8 characters"
+                    />
+                  </label>
+
+                  <button
+                    className="primary-cta full"
+                    type="submit"
+                    disabled={authLoading}
+                  >
+                    {authLoading
+                      ? 'Please wait...'
+                      : modal === 'login'
+                      ? 'Log in'
+                      : 'Create account'}
+
+                    {!authLoading && <ArrowUpRight size={16} />}
+                  </button>
+                </form>
+
+                <div className="modal-switch">
+                  {modal === 'login' ? (
+                    <>
+                      New here?{' '}
+                      <button
+                        disabled={authLoading}
+                        onClick={() => openAuth('signup')}
+                      >
+                        Create an account
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        disabled={authLoading}
+                        onClick={() => openAuth('login')}
+                      >
+                        Log in
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+

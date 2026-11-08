@@ -1,0 +1,51 @@
+/* Compact Discord-inspired community profile — scoped to the public profile modal. */
+.ev-community-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:rgba(8,9,13,.82);backdrop-filter:blur(12px)}
+.ev-community-card{position:relative;width:min(680px,100%);max-height:calc(100vh - 40px);overflow-y:auto;background:#202127;color:#f2f3f5;border:1px solid rgba(255,255,255,.075);border-radius:18px;box-shadow:0 28px 90px rgba(0,0,0,.58);padding:14px}
+.ev-community-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 2px 12px}
+.ev-community-brand{display:flex;align-items:center;gap:2px;font-weight:850;letter-spacing:.12em;font-size:11px;color:#f2f3f5;white-space:nowrap}
+.ev-community-brand-mark{display:grid;place-items:center;width:25px;height:25px;margin-right:7px;border-radius:8px;background:linear-gradient(135deg,#bef264,#38bdf8);color:#151820;font-size:14px;letter-spacing:0}
+.ev-community-brand-accent{color:#a3e635}
+.ev-community-back{display:inline-flex;align-items:center;gap:7px;background:#2b2d35;color:#dbdee3;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:8px 10px;font:inherit;font-size:12px;font-weight:650;cursor:pointer;transition:background .16s}
+.ev-community-back:hover{background:#373943}
+.ev-community-cover{height:150px;position:relative;isolation:isolate;display:flex;align-items:flex-end;justify-content:flex-end;overflow:hidden;border-radius:12px 12px 5px 5px;background:#191a1f}
+.ev-community-cover-blur{position:absolute;inset:-18px;z-index:-2;background-position:center;background-size:cover;filter:blur(18px) brightness(.55);transform:scale(1.08)}
+.ev-community-cover-image{position:relative;z-index:-1;display:block;width:100%;height:100%;object-fit:contain;object-position:center;background:rgba(15,16,20,.3)}
+.ev-community-cover-default{position:absolute;inset:0;z-index:-1;background:linear-gradient(112deg,#202127 0%,#282a34 55%,#1c3037 100%)}
+.ev-community-cover:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(0,0,0,.33),transparent 52%)}
+.ev-community-cover-label{position:absolute;z-index:1;right:13px;bottom:10px;color:rgba(255,255,255,.76);font-size:9px;font-weight:800;letter-spacing:.16em;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.ev-community-profile-main{display:flex;align-items:flex-end;gap:14px;padding:0 18px;min-height:105px}
+.ev-community-avatar{position:relative;display:grid;place-items:center;flex:0 0 106px;width:106px;height:106px;margin-top:-46px;z-index:3;overflow:hidden;border:6px solid #202127;border-radius:50%;background:#31343e;color:#c6cad2;box-shadow:0 5px 20px rgba(0,0,0,.28)}
+.ev-community-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.ev-community-avatar-check{position:absolute;right:0;bottom:0;display:grid;place-items:center;width:27px;height:27px;background:#a3e635;color:#17200b;border:3px solid #202127;border-radius:50%}
+.ev-community-identity{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;flex:1;min-width:0;padding:14px 0 10px}
+.ev-community-names{min-width:0}
+.ev-community-names h1{margin:0;color:#f2f3f5;font-size:clamp(22px,3.7vw,29px);font-weight:800;letter-spacing:-.035em;line-height:1.15;overflow-wrap:anywhere}
+.ev-community-handle{margin-top:5px;color:#b5bac1;font-size:13px;font-weight:550;overflow-wrap:anywhere}
+.ev-community-verified{display:inline-flex;align-items:center;gap:5px;margin-top:7px;color:#bef264;font-size:11px;font-weight:750}
+.ev-community-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ev-community-action-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border:0;border-radius:9px;background:#5865f2;color:white;font:inherit;font-size:12px;font-weight:750;cursor:pointer;white-space:nowrap;transition:filter .15s,transform .15s}
+.ev-community-action-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.ev-community-divider{height:1px;margin:2px 8px 0;background:rgba(255,255,255,.07)}
+.ev-community-content{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,.9fr);gap:12px;padding:16px 8px 2px}
+.ev-community-about,.ev-community-info{min-width:0;border:1px solid rgba(255,255,255,.055);border-radius:12px;background:#25262d;padding:16px}
+.ev-community-section-heading,.ev-community-info-title{color:#b9bdc5;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+.ev-community-bio{margin:13px 0 0;color:#e0e2e7;font-size:13px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.ev-community-info{display:flex;flex-direction:column;gap:13px}
+.ev-community-info-title{margin-bottom:1px}
+.ev-community-info-row{display:flex;align-items:flex-start;gap:9px;color:#9da3ad}
+.ev-community-info-row>span{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ev-community-info-row strong{color:#dfe1e6;font-size:11px;font-weight:700}
+.ev-community-info-row small{color:#9da3ad;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.ev-community-url-block{padding-top:11px;border-top:1px solid rgba(255,255,255,.07)}
+.ev-community-url-block>div{display:flex;align-items:center;gap:6px;color:#b9bdc5;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+.ev-community-url-block code{display:block;margin:9px 0;padding:8px 9px;border:1px solid rgba(255,255,255,.06);border-radius:7px;background:#17181d;color:#b8dcff;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;user-select:all}
+.ev-community-url-block button{border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;background:#31333c;color:#e5e7eb;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+.ev-community-url-block button:hover{background:#3a3c46}
+.ev-community-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 8px 2px;color:#737986;font-size:10px}
+.ev-community-footer span:last-child{letter-spacing:.1em;font-weight:800}
+.ev-community-inline-error{margin:10px 8px 0;color:#fca5a5;font-size:11px}
+.ev-community-state{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;color:#bfc4cc;padding:20px;font-size:13px}
+.ev-community-loader{width:26px;height:26px;border:3px solid rgba(163,230,53,.18);border-top-color:#a3e635;border-radius:50%;animation:ev-community-spin .75s linear infinite}
+@keyframes ev-community-spin{to{transform:rotate(360deg)}}
+.ev-community-state.is-error{color:#fca5a5}.ev-community-state button{padding:8px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:#30323a;color:#f2f3f5;cursor:pointer}
+@media(max-width:620px){.ev-community-backdrop{padding:8px;align-items:center}.ev-community-card{max-height:calc(100vh - 16px);padding:9px;border-radius:15px}.ev-community-topbar{padding:2px 1px 9px}.ev-community-cover{height:116px}.ev-community-profile-main{align-items:flex-start;gap:8px;padding:0 9px;min-height:0}.ev-community-avatar{width:82px;height:82px;flex-basis:82px;margin-top:-32px;border-width:5px}.ev-community-avatar-check{width:22px;height:22px}.ev-community-identity{align-items:flex-start;flex-direction:column;gap:9px;padding:10px 0 11px}.ev-community-names h1{font-size:22px}.ev-community-actions{width:100%}.ev-community-action-primary{padding:8px 10px}.ev-community-content{grid-template-columns:1fr;padding:12px 0 1px;gap:9px}.ev-community-about,.ev-community-info{padding:13px}.ev-community-info{gap:11px}.ev-community-footer{align-items:flex-start;flex-direction:column;gap:5px;padding-top:11px}}

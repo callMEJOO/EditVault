@@ -1,0 +1,10 @@
+.evx-pack-quality{position:absolute;right:13px;top:48px;z-index:2;border:1px solid rgba(200,255,69,.32);border-radius:8px;padding:5px 8px;background:rgba(10,11,12,.72);color:#d6ff72;font-size:10px;font-weight:850;letter-spacing:.02em;backdrop-filter:blur(6px)}
+.evx-pack-form select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid rgba(255,255,255,.105);border-radius:11px;background:#191820;color:#f6f3fb;padding:12px 13px;outline:none;font:inherit;font-size:12px;transition:border-color .22s,box-shadow .22s,background .22s}
+.evx-pack-form select:focus{border-color:rgba(200,255,69,.48);box-shadow:0 0 0 3px rgba(200,255,69,.07)}
+.evx-source-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0;margin:0;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.025)}
+.evx-source-picker legend{padding:0 6px;color:#d0cbd8;font-size:10px;font-weight:750}
+.evx-source-picker label{display:flex;flex-direction:row;align-items:center;gap:8px;min-width:0;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.025);font-size:10px;line-height:1.5;cursor:pointer}
+.evx-source-picker input[type=radio]{width:15px;min-width:15px;height:15px;min-height:15px;margin:0;accent-color:#c8ff45}
+.evx-pack-form input[type=file]{min-height:48px;padding:10px;font-size:11px;color:#cbc6d4}
+.evx-optional-label{display:inline;color:#958f9f;font-size:9px;font-weight:500}
+@media(max-width:640px){.evx-source-picker{grid-template-columns:minmax(0,1fr)}.evx-source-picker label{padding:9px}}

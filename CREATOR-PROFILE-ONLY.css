@@ -1,0 +1,236 @@
+
+/* =====================================================================
+   EDITVAULT • CREATOR PROFILE / PREMIUM HEADER POLISH (2026-10)
+   Presentation only — no changes to links, React state, or API behavior.
+   Scoped to the public creator popup to avoid affecting other pages.
+   ===================================================================== */
+.public-creator-backdrop {
+  padding: clamp(10px, 2.5vw, 28px);
+  background: rgba(5, 6, 10, .84);
+  backdrop-filter: blur(15px) saturate(125%);
+  -webkit-backdrop-filter: blur(15px) saturate(125%);
+}
+.public-creator-page {
+  isolation: isolate;
+  width: min(1000px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid rgba(198, 255, 77, .16);
+  border-radius: 24px;
+  color: #f4f5f8;
+  background:
+    radial-gradient(ellipse 64% 42% at 100% -5%, rgba(177, 255, 70, .105), transparent 72%),
+    radial-gradient(ellipse 65% 32% at 0% 100%, rgba(141, 112, 255, .065), transparent 75%),
+    #13141a;
+  box-shadow: 0 40px 110px rgba(0, 0, 0, .65), inset 0 1px rgba(255,255,255,.035);
+  scrollbar-color: #50564b #17191b;
+  scrollbar-width: thin;
+}
+.public-creator-page::-webkit-scrollbar { width: 8px; }
+.public-creator-page::-webkit-scrollbar-track { background: #17191b; border-radius: 99px; }
+.public-creator-page::-webkit-scrollbar-thumb { background: #4c5148; border: 2px solid #17191b; border-radius: 99px; }
+.public-creator-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  margin: -2px -2px 21px;
+  padding: 10px 44px 24px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, .095);
+}
+.public-creator-avatar {
+  width: 82px;
+  height: 82px;
+  border-radius: 23px;
+  border: 2px solid rgba(198, 255, 77, .57);
+  background: linear-gradient(145deg, rgba(198, 255, 77, .19), rgba(128, 111, 255, .14));
+  box-shadow: 0 0 0 5px rgba(198, 255, 77, .045), 0 14px 35px rgba(0, 0, 0, .2);
+}
+.public-creator-heading { flex: 1 1 190px; min-width: 0; }
+.public-creator-heading .eyebrow {
+  color: #c6ff4d;
+  font: 700 10px 'DM Mono', monospace;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+.public-creator-heading h2 {
+  margin: 7px 0 8px;
+  font-size: clamp(25px, 3vw, 36px);
+  font-weight: 850;
+  line-height: 1.14;
+  letter-spacing: -1.4px;
+}
+.public-creator-verified {
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid rgba(125, 211, 252, .29);
+  border-radius: 999px;
+  color: #b1e8ff;
+  background: rgba(49, 158, 213, .09);
+  font-size: 10px;
+}
+.public-creator-followers { gap: 8px; margin-top: 12px; color: #a7a8b4; }
+.public-creator-followers strong { font-size: 15px; font-weight: 700; }
+.public-creator-followers em {
+  padding: 3px 7px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 6px;
+  background: rgba(255,255,255,.04);
+  font-size: 8px;
+}
+.public-creator-updated { margin-top: 7px; color: #898c97; line-height: 1.5; }
+
+/* Both profile destinations share the same button treatment.
+   Explicitly set button appearance because the community destination is a
+   <button>, whereas TikTok is an <a> (browser defaults caused the white box). */
+.public-creator-header-actions {
+  display: flex;
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  min-width: 0;
+  max-width: 100%;
+}
+.public-creator-header-actions .public-creator-community-link,
+.public-creator-header-actions .public-creator-tiktok {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(198,255,77,.19);
+  border-radius: 11px;
+  color: #e8ecf0;
+  background: linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.018));
+  box-shadow: inset 0 1px rgba(255,255,255,.06), 0 5px 16px rgba(0,0,0,.12);
+  font-family: Manrope, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.public-creator-header-actions .public-creator-community-link {
+  color: #eaffc0;
+  border-color: rgba(198,255,77,.3);
+  background: linear-gradient(145deg, rgba(198,255,77,.115), rgba(198,255,77,.025));
+}
+.public-creator-header-actions .public-creator-community-link svg,
+.public-creator-header-actions .public-creator-tiktok svg {
+  flex: 0 0 auto;
+  color: #c6ff4d;
+  width: 15px;
+  height: 15px;
+}
+.public-creator-header-actions .public-creator-tiktok svg { color: #d3d4e7; }
+.public-creator-header-actions .public-creator-community-link:hover,
+.public-creator-header-actions .public-creator-tiktok:hover {
+  transform: translateY(-2px);
+  color: #ddffa0;
+  border-color: rgba(198,255,77,.56);
+  background: linear-gradient(145deg, rgba(198,255,77,.145), rgba(198,255,77,.035));
+  box-shadow: 0 9px 25px rgba(198,255,77,.07), inset 0 1px rgba(255,255,255,.07);
+}
+.public-creator-header-actions .public-creator-community-link:active,
+.public-creator-header-actions .public-creator-tiktok:active { transform: translateY(0); }
+.public-creator-header-actions .public-creator-community-link:focus-visible,
+.public-creator-header-actions .public-creator-tiktok:focus-visible,
+.public-creator-close:focus-visible {
+  outline: 2px solid #c6ff4d;
+  outline-offset: 3px;
+}
+.public-creator-close {
+  z-index: 5;
+  top: 14px;
+  right: 14px;
+  width: 37px;
+  height: 37px;
+  border-radius: 11px;
+  border-color: rgba(255,255,255,.13);
+  background: #0c0d12e6;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.public-creator-close:hover {
+  transform: rotate(90deg);
+  border-color: rgba(198,255,77,.36);
+  background: rgba(198,255,77,.095);
+}
+
+/* Give the surrounding creator surface one visual system while leaving
+   form functionality and all click handlers completely unchanged. */
+.public-creator-page .ev-custom-request-box {
+  border: 1px solid rgba(198,255,77,.19);
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(198,255,77,.055), transparent 65%), #17191d;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+.public-creator-page .ev-custom-request-box h3 { letter-spacing: -.5px; }
+.public-creator-page .ev-custom-request-toggle {
+  border-radius: 10px;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.public-creator-page .ev-custom-request-toggle:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(198,255,77,.15);
+}
+.public-creator-page .ev-custom-request-form input,
+.public-creator-page .ev-custom-request-form textarea {
+  border-radius: 11px;
+  background: #0d0f15;
+  border: 1px solid rgba(255,255,255,.14);
+  color: #f4f4f8;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.public-creator-page .ev-custom-request-form input:focus,
+.public-creator-page .ev-custom-request-form textarea:focus {
+  border-color: rgba(198,255,77,.57);
+  box-shadow: 0 0 0 3px rgba(198,255,77,.08);
+}
+.public-creator-page .public-creator-insight {
+  border-color: rgba(255,255,255,.10);
+  border-radius: 14px;
+  background: linear-gradient(150deg, rgba(255,255,255,.055), rgba(255,255,255,.012));
+  transition: border-color .2s ease, transform .2s ease;
+}
+.public-creator-page .public-creator-insight:hover { transform: translateY(-2px); border-color: rgba(198,255,77,.21); }
+.public-creator-page .public-creator-edit { border-radius: 14px; }
+
+@media (max-width: 850px) {
+  .public-creator-header { align-items: flex-start; }
+  .public-creator-header-actions { flex: 1 1 100%; justify-content: flex-start; padding-left: 0; }
+}
+@media (max-width: 640px) {
+  .public-creator-backdrop { padding: 8px; }
+  .public-creator-page { max-height: calc(100dvh - 16px); padding: 17px; border-radius: 19px; }
+  .public-creator-header { gap: 12px; padding: 6px 40px 18px 0; margin-bottom: 16px; }
+  .public-creator-avatar { width: 58px; height: 58px; border-radius: 17px; }
+  .public-creator-heading { flex: 1 1 calc(100% - 74px); }
+  .public-creator-heading h2 { font-size: clamp(22px, 6vw, 30px); }
+  .public-creator-header-actions { flex: 1 1 100%; width: 100%; margin: 3px 0 0; padding: 0; }
+  .public-creator-header-actions .public-creator-community-link,
+  .public-creator-header-actions .public-creator-tiktok { flex: 1 1 150px; min-width: 0; padding-inline: 10px; }
+  .public-creator-followers { row-gap: 4px; }
+}
+@media (max-width: 370px) {
+  .public-creator-header-actions { flex-direction: column; align-items: stretch; }
+  .public-creator-header-actions .public-creator-community-link,
+  .public-creator-header-actions .public-creator-tiktok { flex: none; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-creator-header-actions .public-creator-community-link,
+  .public-creator-header-actions .public-creator-tiktok,
+  .public-creator-close,
+  .public-creator-page .public-creator-insight { transition: none; }
+}
+/* END EDITVAULT CREATOR PROFILE PREMIUM HEADER POLISH */

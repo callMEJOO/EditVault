@@ -1,0 +1,288 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowDownToLine, ArrowRight, BadgeCheck, Check, CheckCircle2, CircleHelp,
+  Clipboard, Clock3, Coins, Copy, Film, Gift, Gauge, Link2, LoaderCircle,
+  LockKeyhole, Scissors, Sparkles, Upload, Users, WandSparkles, Zap,
+} from 'lucide-react';
+import './editlab-rewards.css';
+
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+const MAX_FILE_BYTES = 250 * 1024 * 1024;
+
+const PRESETS = [
+  { id: 'clean', title: 'Clean', description: 'Natural contrast', filter: 'none', swatch: 'linear-gradient(135deg,#637381,#cad2d8)' },
+  { id: 'cinematic', title: 'Cinematic', description: 'Deep contrast', filter: 'contrast(1.12) saturate(1.12) brightness(.97)', swatch: 'linear-gradient(135deg,#162b42,#c49a6c)' },
+  { id: 'warm', title: 'Golden hour', description: 'Warm highlights', filter: 'sepia(.17) saturate(1.13) contrast(1.04) brightness(1.02)', swatch: 'linear-gradient(135deg,#72462d,#e9b975)' },
+  { id: 'cool', title: 'Cool tone', description: 'Blue shadows', filter: 'saturate(.92) hue-rotate(8deg) contrast(1.08)', swatch: 'linear-gradient(135deg,#1d4261,#9abed5)' },
+  { id: 'moody', title: 'Moody', description: 'Muted and dark', filter: 'brightness(.91) contrast(1.16) saturate(.78)', swatch: 'linear-gradient(135deg,#171c2b,#6f6b83)' },
+  { id: 'vibrant', title: 'Vibrant', description: 'Color pop', filter: 'saturate(1.34) contrast(1.06) brightness(1.02)', swatch: 'linear-gradient(135deg,#4b51a6,#e580b3)' },
+];
+
+function formatBytes(value) {
+  const bytes = Number(value || 0);
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${(bytes / (1024 ** power)).toFixed(power ? 1 : 0)} ${units[power]}`;
+}
+
+function authHeaders() {
+  const token = localStorage.getItem('editvault_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export default function EditLabRewards({ user, language = 'en', onNotice, onLoginRequest, onPointsChange }) {
+  const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [presetId, setPresetId] = useState('cinematic');
+  const [quality, setQuality] = useState('balanced');
+  const [processing, setProcessing] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [processError, setProcessError] = useState('');
+  const [result, setResult] = useState(null);
+  const fileInputRef = useRef(null);
+  const activePreset = useMemo(() => PRESETS.find((preset) => preset.id === presetId) || PRESETS[0], [presetId]);
+
+  const [rewardSummary, setRewardSummary] = useState(null);
+  const [rewardLoading, setRewardLoading] = useState(false);
+  const [qualifying, setQualifying] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const inviteUrl = useMemo(() => user?.id ? `${window.location.origin}/?ref=${encodeURIComponent(user.id)}` : '', [user?.id]);
+
+  // Save a referral from a shared URL before the user opens the signup form.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ref)) {
+      localStorage.setItem('editvault_referral_code', ref);
+      params.delete('ref');
+      const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash}`;
+      window.history.replaceState({}, '', nextUrl);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!file) { setPreviewUrl(''); return undefined; }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    const resultUrl = result?.url;
+    return () => { if (resultUrl) URL.revokeObjectURL(resultUrl); };
+  }, [result?.url]);
+
+  const acceptFile = useCallback((incoming) => {
+    setProcessError('');
+    setResult(null);
+    if (!incoming) return;
+    const validMime = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'].includes(incoming.type);
+    const validExt = /\.(mp4|mov|webm|mkv)$/i.test(incoming.name || '');
+    if (!validMime && !validExt) { setProcessError('Choose an MP4, MOV, WebM, or MKV video.'); return; }
+    if (incoming.size > MAX_FILE_BYTES) { setProcessError('This file is over the 250 MB limit. Choose a smaller video.'); return; }
+    setFile(incoming);
+  }, []);
+
+  const compressAndDownload = async () => {
+    if (!user) { onLoginRequest?.(); return; }
+    if (!file || processing) return;
+    const token = localStorage.getItem('editvault_token');
+    if (!token) { onLoginRequest?.(); return; }
+    setProcessing(true);
+    setProcessError('');
+    setResult(null);
+    try {
+      const body = new FormData();
+      body.append('video', file, file.name);
+      body.append('preset', presetId);
+      body.append('quality', quality);
+      const response = await fetch(`${API_URL}/api/editlab/compress`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Could not process this video.');
+      }
+      const blob = await response.blob();
+      if (!blob.size) throw new Error('The processed video was empty. Please try a different quality setting.');
+      const url = URL.createObjectURL(blob);
+      const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]/gi, '-').slice(0, 70) || 'editvault-video';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${baseName}-editvault.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      const saved = Math.max(0, 100 - (blob.size / file.size) * 100);
+      setResult({ before: file.size, after: blob.size, saved, url, name: a.download });
+      onNotice?.('Your processed video is ready and the download has started.');
+    } catch (error) {
+      setProcessError(error.message || 'Video processing failed.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const loadRewardSummary = useCallback(async () => {
+    if (!user) { setRewardSummary(null); return; }
+    setRewardLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/rewards/summary`, { headers: authHeaders() });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load referral status.');
+      setRewardSummary(data);
+    } catch (error) {
+      onNotice?.(error.message || 'Referral status is temporarily unavailable.');
+    } finally { setRewardLoading(false); }
+  }, [user?.id, onNotice]);
+
+  useEffect(() => { loadRewardSummary(); }, [loadRewardSummary]);
+
+  const refreshReferrals = async () => {
+    if (!user) { onLoginRequest?.(); return; }
+    setQualifying(true);
+    try {
+      const response = await fetch(`${API_URL}/api/rewards/refresh`, { method: 'POST', headers: authHeaders() });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not update referral progress.');
+      if (data.pointsAdded > 0) {
+        onPointsChange?.((current) => Number(current || 0) + Number(data.pointsAdded));
+        onNotice?.(`Referral reward confirmed: ${data.pointsAdded} points added to your wallet.`);
+      } else onNotice?.('Referral progress checked. Rewards unlock after a friend publishes an edit or makes a marketplace purchase.');
+      await loadRewardSummary();
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, { headers: authHeaders() });
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        onPointsChange?.(Number(walletData.balance || 0));
+      }
+    } catch (error) { onNotice?.(error.message || 'Could not update referral progress.'); }
+    finally { setQualifying(false); }
+  };
+
+  const copyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      onNotice?.('Clipboard access failed. Copy the invite link from the field.');
+    }
+  };
+
+  return (
+    <div className={`evlr-root evlr-lang-${language}`}>
+      <section className="evlr-section evlr-editlab" id="editlab">
+        <div className="evlr-heading">
+          <div>
+            <span className="evlr-eyebrow"><span className="evlr-spark" /> EDITVAULT TOOLBOX</span>
+            <h2>EditLab <span>Studio.</span></h2>
+            <p>Upload a clip, preview a color look, and compress a ready-to-share video — all in one place.</p>
+          </div>
+          <div className="evlr-heading-mark"><WandSparkles size={23} /><span>01 / CREATE</span></div>
+        </div>
+
+        <div className="evlr-editor-grid">
+          <div className="evlr-editor-card">
+            <div className="evlr-card-topline"><span><Film size={16} /> LOCAL VIDEO WORKSPACE</span><span className="evlr-private"><LockKeyhole size={12} /> Private by default</span></div>
+            {!file ? (
+              <button type="button" className={`evlr-dropzone ${dragging ? 'is-dragging' : ''}`} onClick={() => fileInputRef.current?.click()}
+                onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(event) => { event.preventDefault(); setDragging(false); acceptFile(event.dataTransfer.files?.[0]); }}>
+                <span className="evlr-upload-icon"><Upload size={24} /></span>
+                <strong>Drop your video here</strong>
+                <span>or click to browse · MP4, MOV, WebM or MKV</span>
+                <small>Maximum file size: 250 MB. Your original is not published.</small>
+              </button>
+            ) : (
+              <div className="evlr-preview-wrap">
+                <video className="evlr-video-preview" src={previewUrl} controls playsInline style={{ filter: activePreset.filter }} />
+                <div className="evlr-file-strip"><span className="evlr-file-icon"><Film size={17} /></span><div><strong title={file.name}>{file.name}</strong><small>{formatBytes(file.size)} · Original stays on your device until you process it</small></div><button type="button" onClick={() => { setFile(null); setResult(null); setProcessError(''); if (fileInputRef.current) fileInputRef.current.value = ''; }} aria-label="Remove video">×</button></div>
+              </div>
+            )}
+            <input ref={fileInputRef} className="evlr-repick-input" type="file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.webm,.mkv" hidden onChange={(event) => acceptFile(event.target.files?.[0])} />
+
+            <div className="evlr-control-block">
+              <div className="evlr-control-heading"><div><span className="evlr-step">01</span><div><strong>Choose your CC</strong><small>Preview instantly. The selected look is applied during export.</small></div></div><span className="evlr-mini-tag">6 PRESETS</span></div>
+              <div className="evlr-presets-grid">{PRESETS.map((preset) => (
+                <button type="button" key={preset.id} className={`evlr-preset ${preset.id === presetId ? 'is-selected' : ''}`} onClick={() => setPresetId(preset.id)} aria-pressed={preset.id === presetId}>
+                  <span className="evlr-preset-swatch" style={{ background: preset.swatch }}><span /></span>
+                  <span className="evlr-preset-copy"><strong>{preset.title}</strong><small>{preset.description}</small></span>
+                  {preset.id === presetId && <Check size={14} className="evlr-preset-check" />}
+                </button>
+              ))}</div>
+            </div>
+
+            <div className="evlr-control-block evlr-compression-block">
+              <div className="evlr-control-heading"><div><span className="evlr-step">02</span><div><strong>Compression & export</strong><small>H.264 MP4 · tuned for smaller files and broad compatibility.</small></div></div><span className="evlr-mini-tag"><Gauge size={13} /> FFmpeg</span></div>
+              <div className="evlr-quality-options" role="group" aria-label="Output quality">
+                {[{ id: 'smaller', title: 'Smaller file', sub: 'More compression' }, { id: 'balanced', title: 'Balanced', sub: 'Recommended' }, { id: 'higher', title: 'Higher quality', sub: 'Less compression' }].map((item) => (
+                  <button type="button" key={item.id} className={quality === item.id ? 'is-selected' : ''} onClick={() => setQuality(item.id)} aria-pressed={quality === item.id}><strong>{item.title}</strong><small>{item.sub}</small></button>
+                ))}
+              </div>
+              {processError && <div className="evlr-error" role="alert"><CircleHelp size={15} /> {processError}</div>}
+              {result && <div className="evlr-result" role="status"><CheckCircle2 size={17} /><div><strong>Export complete</strong><small>{formatBytes(result.before)} → {formatBytes(result.after)}{result.after < result.before ? ` · ${result.saved.toFixed(0)}% smaller` : ' · no size reduction for this source'}</small></div><a href={result.url} download={result.name}><ArrowDownToLine size={14} /> Download again</a></div>}
+              <button type="button" className="evlr-export-btn" onClick={compressAndDownload} disabled={!file || processing}>
+                {processing ? <><LoaderCircle size={17} className="evlr-spin" /> Processing video…</> : <><Scissors size={17} /> Apply CC & compress <ArrowRight size={16} /></>}
+              </button>
+              {!user && <p className="evlr-signin-hint"><LockKeyhole size={13} /> Preview presets without signing in. Log in to run server-side compression.</p>}
+            </div>
+          </div>
+
+          <aside className="evlr-side-stack">
+            <article className="evlr-side-card evlr-topaz-card">
+              <div className="evlr-topaz-art"><div className="evlr-topaz-glow" /><Sparkles size={26} /></div>
+              <div className="evlr-topaz-copy"><span className="evlr-coming-soon">COMING SOON</span><h3>AI Quality Boost</h3><p>Topaz enhancement will be added after the API plan, cost limits, and queue are configured. It is not active yet.</p><div className="evlr-feature-list"><span><CheckCircle2 size={14} /> Resolution enhancement</span><span><CheckCircle2 size={14} /> Noise reduction</span><span><Clock3 size={14} /> Controlled job queue</span></div></div>
+            </article>
+            <article className="evlr-side-card evlr-compress-info"><div className="evlr-info-icon"><Gauge size={19} /></div><div><span className="evlr-eyebrow">SMART EXPORT</span><h3>Less weight. Same intent.</h3><p>Compression may reduce file size without an obvious quality loss, but results depend on the source, resolution, motion, and chosen quality setting.</p></div><div className="evlr-info-foot"><span>H.264 / MP4</span><span>Fast-start enabled</span><span>Temporary processing files</span></div></article>
+            <article className="evlr-side-card evlr-privacy-note"><LockKeyhole size={17} /><div><strong>Your files stay yours</strong><p>Videos are processed in a temporary server folder and removed after the download response. Nothing is posted to the public marketplace.</p></div></article>
+          </aside>
+        </div>
+      </section>
+
+      <section className="evlr-section evlr-rewards" id="earn-points">
+        <div className="evlr-heading">
+          <div><span className="evlr-eyebrow"><span className="evlr-spark" /> GROW WITH EDITVAULT</span><h2>Earn points. <span>Bring your people.</span></h2><p>Start with referrals. Ads and partner tasks stay locked until a real provider is connected and verified.</p></div>
+          <div className="evlr-heading-mark"><Gift size={23} /><span>02 / REWARDS</span></div>
+        </div>
+
+        <div className="evlr-reward-grid">
+          <article className="evlr-referral-card">
+            <div className="evlr-referral-head"><div className="evlr-referral-symbol"><Users size={23} /></div><span className="evlr-live-badge"><span /> LIVE</span></div>
+            <span className="evlr-eyebrow">INVITE & EARN</span><h3>Your community is your growth engine.</h3><p>Share your personal invite link. Points are awarded only after the invited member performs a real marketplace action.</p>
+            {user ? <>
+              <label className="evlr-invite-label" htmlFor="evlr-invite-link">Your personal invite link</label>
+              <div className="evlr-invite-field"><input id="evlr-invite-link" value={inviteUrl} readOnly onFocus={(event) => event.target.select()} /><button type="button" onClick={copyInvite} aria-label="Copy invite link">{copied ? <Check size={16} /> : <Copy size={16} />}<span>{copied ? 'Copied' : 'Copy'}</span></button></div>
+              <div className="evlr-referral-stats"><div><strong>{rewardSummary?.referrals?.qualified ?? '—'}</strong><span>Qualified</span></div><div><strong>{rewardSummary?.referrals?.pending ?? '—'}</strong><span>Pending</span></div><div><strong>{rewardSummary?.referrals?.total ?? '—'}</strong><span>Total invites</span></div></div>
+              <button type="button" className="evlr-refresh-btn" onClick={refreshReferrals} disabled={qualifying || rewardLoading}>{qualifying ? <LoaderCircle size={15} className="evlr-spin" /> : <Zap size={15} />} {qualifying ? 'Checking…' : 'Check referral progress'}</button>
+              <small className="evlr-policy-note">Rule: the invited person must publish an edit or complete a marketplace purchase. Self-referrals and repeated rewards are blocked.</small>
+            </> : <div className="evlr-signup-cta"><LockKeyhole size={18} /><span>Sign in to get your unique invite link and track referrals.</span><button type="button" onClick={onLoginRequest}>Join free <ArrowRight size={14} /></button></div>}
+          </article>
+
+          <div className="evlr-task-stack">
+            <article className="evlr-task-card">
+              <div className="evlr-task-icon evlr-task-icon-blue"><Film size={19} /></div><div className="evlr-task-main"><div><h3>Rewarded video ads</h3><p>Earn points after a verified ad view from an approved provider.</p></div><span className="evlr-status-pill evlr-status-locked"><LockKeyhole size={12} /> Provider needed</span></div>
+              <div className="evlr-task-foot"><span>Available after ad-network integration</span><span className="evlr-task-value">— PTS</span></div>
+            </article>
+            <article className="evlr-task-card">
+              <div className="evlr-task-icon evlr-task-icon-purple"><Clipboard size={19} /></div><div className="evlr-task-main"><div><h3>Partner tasks & surveys</h3><p>Optional offers with rewards shown before you start.</p></div><span className="evlr-status-pill evlr-status-locked"><LockKeyhole size={12} /> Not connected</span></div>
+              <div className="evlr-task-foot"><span>No fake task completions or manual point buttons</span><span className="evlr-task-value">— PTS</span></div>
+            </article>
+            <article className="evlr-task-card">
+              <div className="evlr-task-icon evlr-task-icon-gold"><Link2 size={19} /></div><div className="evlr-task-main"><div><h3>Follow a partner page</h3><p>Optional social tasks can appear here when a sponsor campaign and permitted verification method are connected.</p></div><span className="evlr-status-pill evlr-status-locked"><LockKeyhole size={12} /> Campaign needed</span></div>
+              <div className="evlr-task-foot"><span>No reward for unverified follows</span><span className="evlr-task-value">— PTS</span></div>
+            </article>
+            <article className="evlr-task-card evlr-task-community">
+              <div className="evlr-task-icon evlr-task-icon-gold"><Users size={19} /></div><div className="evlr-task-main"><div><h3>Invite real creators</h3><p>Help the community grow with original edits and active members.</p></div><span className="evlr-status-pill evlr-status-live"><CheckCircle2 size={12} /> Available</span></div>
+              <div className="evlr-task-foot"><span>Invites reward after a qualifying action</span><span className="evlr-task-value">{rewardSummary?.reward?.referrerPoints ?? 40} + {rewardSummary?.reward?.invitedMemberPoints ?? 20} PTS</span></div>
+            </article>
+          </div>
+        </div>
+        <div className="evlr-rewards-footnote"><BadgeCheck size={15} /><span>Points are in-platform credits, not cash. This version does not promise cash withdrawals or claim that an ad/task provider is connected.</span></div>
+      </section>
+    </div>
+  );
+}

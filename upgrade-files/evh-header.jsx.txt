@@ -1,0 +1,95 @@
+      <header className="topbar evh-header">
+        <a className="brand evh-brand" href="#top" onClick={() => setMobileNav(false)}>
+          <span className="brand-mark"><Clapperboard size={20} /></span>
+          <span>EDIT<span className="brand-accent">VAULT</span><small>{tx('CREATOR MARKETPLACE', 'سوق المبدعين')}</small></span>
+        </a>
+
+        <nav
+          id="evh-navigation"
+          className={mobileNav ? 'nav evh-nav evh-nav-open' : 'nav evh-nav'}
+          aria-label={tx('Marketplace navigation', 'التنقل الرئيسي')}
+        >
+          <div className="evh-nav-eyebrow">{tx('EXPLORE EDITVAULT', 'تصفح إيديت فولت')}</div>
+          <div className="evh-nav-primary">
+            <a className={activePage === 'explore' ? 'nav-active' : ''} href="#explore" onClick={() => setMobileNav(false)}>{tx('Explore', 'استكشف')}</a>
+            <a className={activePage === 'scene-packs' ? 'nav-active' : ''} href="#scene-packs" onClick={() => setMobileNav(false)}>{tx('Scene Packs', 'حزم المشاهد')}</a>
+            <a className={activePage === 'editlab' ? 'nav-active' : ''} href="#editlab" onClick={() => setMobileNav(false)}>EditLab</a>
+            <a className={activePage === 'earn' ? 'nav-active' : ''} href="#earn-points" onClick={() => setMobileNav(false)}>{tx('Earn Points', 'اجمع النقاط')}</a>
+            <a className={activePage === 'creators' ? 'nav-active' : ''} href="#creators" onClick={() => setMobileNav(false)}>{tx('Creators', 'المبدعون')}</a>
+          </div>
+          <details className="evh-nav-more">
+            <summary>{tx('More', 'المزيد')} <ChevronDown size={13} /></summary>
+            <div className="evh-nav-more-panel">
+              <a className={activePage === 'accounts' ? 'nav-active' : ''} href="#premium" onClick={(event) => { setMobileNav(false); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{tx('Accounts', 'الحسابات')}</a>
+              <a className={activePage === 'requests' ? 'nav-active' : ''} href="#requests" onClick={(event) => { setMobileNav(false); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{language === 'ar' ? 'طلبات التعديل' : language === 'es' ? 'Solicitudes' : 'Requests'}</a>
+              <a className={activePage === 'library' ? 'nav-active' : ''} href="#library" onClick={(event) => { setMobileNav(false); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{tx('My Library', 'مكتبتي')}</a>
+              <a className={activePage === 'how' ? 'nav-active' : ''} href="#how" onClick={(event) => { setMobileNav(false); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{tx('How it works', 'كيف يعمل الموقع')}</a>
+            </div>
+          </details>
+          <div className="evh-mobile-extra">
+            <a className={activePage === 'accounts' ? 'nav-active' : ''} href="#premium" onClick={() => setMobileNav(false)}>{tx('Accounts', 'الحسابات')}</a>
+            <a className={activePage === 'requests' ? 'nav-active' : ''} href="#requests" onClick={() => setMobileNav(false)}>{language === 'ar' ? 'طلبات التعديل' : language === 'es' ? 'Solicitudes' : 'Requests'}</a>
+            <a className={activePage === 'library' ? 'nav-active' : ''} href="#library" onClick={() => setMobileNav(false)}>{tx('My Library', 'مكتبتي')}</a>
+            <a className={activePage === 'how' ? 'nav-active' : ''} href="#how" onClick={() => setMobileNav(false)}>{tx('How it works', 'كيف يعمل الموقع')}</a>
+          </div>
+          <div className="evh-mobile-account">
+            <div className="evh-mobile-account-label">{tx('YOUR ACCOUNT', 'حسابك')}</div>
+            {user ? (
+              <>
+                <div className="evh-mobile-user">
+                  <span className="account-avatar">{user.avatar_data_url ? <img src={user.avatar_data_url} alt="" /> : <span>{String(user.displayName || user.display_name || user.email || 'U').trim().charAt(0).toUpperCase()}</span>}</span>
+                  <span>{user.displayName || user.display_name || user.email}</span>
+                </div>
+                <button type="button" onClick={() => { setMobileNav(false); setSettingsOpen(true); }}><Settings2 size={17} /> {tx('Settings', 'الإعدادات')}</button>
+                <button type="button" onClick={() => { setMobileNav(false); setProfileOpen(true); }}><UserRound size={17} /> {tx('Profile', 'الملف الشخصي')}</button>
+                <button type="button" onClick={() => { setMobileNav(false); canAccessCreatorStudio ? setCreatorStudioOpen(true) : setCreatorApplicationOpen(true); }}><Sparkles size={17} /> {canAccessCreatorStudio ? tx('Creator Studio', 'استوديو المبدع') : tx('Apply as creator', 'قدّم كصانع محتوى')}</button>
+                {user.role === 'admin' && <button type="button" onClick={() => { setMobileNav(false); document.getElementById('creator-admin-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}><ShieldCheck size={17} /> {tx('Admin', 'الإدارة')}</button>}
+                <button className="evh-logout" type="button" onClick={() => { setMobileNav(false); logout(); }}>{tx('Log out', 'تسجيل الخروج')}</button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => { setMobileNav(false); openAuth('login'); }}>{tx('Log in', 'تسجيل الدخول')}</button>
+                <button type="button" onClick={() => { setMobileNav(false); openAuth('signup'); }}>{tx('Join free', 'انضم مجانًا')}</button>
+              </>
+            )}
+          </div>
+        </nav>
+
+        <div className="top-actions evh-actions">
+          <button className="points-pill evh-points" type="button" onClick={() => setModal('points')} aria-label={tx(`Wallet: ${points} points`, `المحفظة: ${points} نقطة`)}>
+            <Coins size={15} /><b>{points}</b><span>{tx('PTS', 'نقطة')}</span>
+          </button>
+          {user ? (
+            <details className="evh-account-dropdown">
+              <summary className="evh-account-trigger" title={user.email || tx('Your account', 'حسابك')}>
+                <span className="account-avatar">{user.avatar_data_url ? <img src={user.avatar_data_url} alt="" /> : <span>{String(user.displayName || user.display_name || user.email || 'U').trim().charAt(0).toUpperCase()}</span>}</span>
+                <span className="evh-account-name">{user.displayName || user.display_name || user.email}</span>
+                <ChevronDown className="evh-account-chevron" size={14} />
+              </summary>
+              <div className="evh-account-popover">
+                <span className="evh-account-caption">{tx('YOUR ACCOUNT', 'حسابك')}</span>
+                <strong>{user.displayName || user.display_name || user.email}</strong>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); setProfileOpen(true); }}><UserRound size={16}/>{tx('Profile', 'الملف الشخصي')}</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); setSettingsOpen(true); }}><Settings2 size={16}/>{tx('Settings', 'الإعدادات')}</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); canAccessCreatorStudio ? setCreatorStudioOpen(true) : setCreatorApplicationOpen(true); }}><Sparkles size={16}/>{canAccessCreatorStudio ? tx('Creator Studio', 'استوديو المبدع') : tx('Apply as creator', 'قدّم كصانع محتوى')}</button>
+                {user.role === 'admin' && <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); document.getElementById('creator-admin-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}><ShieldCheck size={16}/>{tx('Admin', 'الإدارة')}</button>}
+                <button className="evh-logout" type="button" onClick={logout}>{tx('Log out', 'تسجيل الخروج')}</button>
+              </div>
+            </details>
+          ) : (
+            <div className="evh-public-actions">
+              <button className="login-btn" type="button" onClick={() => openAuth('login')}>{tx('Log in', 'تسجيل الدخول')}</button>
+              <button className="signup-btn" type="button" onClick={() => openAuth('signup')}>{tx('Join free', 'انضم مجانًا')}</button>
+            </div>
+          )}
+          <button
+            className="mobile-menu evh-menu-toggle"
+            type="button"
+            onClick={() => setMobileNav((value) => !value)}
+            aria-label={mobileNav ? tx('Close navigation', 'إغلاق القائمة') : tx('Open navigation', 'فتح القائمة')}
+            aria-expanded={mobileNav}
+            aria-controls="evh-navigation"
+          >{mobileNav ? <X size={22} /> : <Menu size={22} />}</button>
+        </div>
+      </header>
+      {mobileNav && <button type="button" className="evh-mobile-scrim" aria-label={tx('Close navigation', 'إغلاق القائمة')} onClick={() => setMobileNav(false)} />}

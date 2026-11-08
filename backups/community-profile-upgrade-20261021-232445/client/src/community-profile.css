@@ -1,0 +1,20 @@
+.ev-community-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(3,7,18,.78);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px}
+.ev-community-card{position:relative;width:min(760px,100%);max-height:min(90vh,900px);overflow:auto;border:1px solid rgba(148,163,184,.24);border-radius:24px;background:var(--panel,#101522);color:var(--text,#f8fafc);box-shadow:0 28px 100px rgba(0,0,0,.5);padding:18px}
+.ev-community-back{display:inline-flex;align-items:center;gap:8px;background:transparent;color:inherit;border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:9px 12px;cursor:pointer}
+.ev-community-cover{height:220px;margin-top:16px;border-radius:16px;background:linear-gradient(120deg,#18243d,#342050 55%,#12414a);background-position:center;background-size:cover}
+.ev-community-identity{display:flex;align-items:flex-end;gap:16px;margin:-38px 18px 0;position:relative}
+.ev-community-avatar{width:94px;height:94px;flex:0 0 94px;border:4px solid var(--panel,#101522);border-radius:50%;overflow:hidden;background:#242c3d;display:grid;place-items:center;color:#cbd5e1}
+.ev-community-avatar img{width:100%;height:100%;object-fit:cover}
+.ev-community-names h1{margin:0;font-size:clamp(22px,4vw,32px);line-height:1.2}
+.ev-community-names p{margin:5px 0;color:#9caac0}
+.ev-community-badge{display:inline-flex;align-items:center;gap:5px;color:#7dd3fc;font-size:12px}
+.ev-community-bio{margin:24px 8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+.ev-community-meta{margin:0 8px 10px;color:#94a3b8;font-size:13px}
+.ev-community-state{padding:48px 10px;text-align:center;color:#aebbd0}
+.ev-community-state.is-error{color:#fca5a5}
+@media(max-width:600px){.ev-community-backdrop{padding:8px;align-items:flex-start}.ev-community-card{padding:12px;border-radius:18px;margin-top:4vh}.ev-community-cover{height:150px}.ev-community-identity{margin-left:8px;margin-right:8px;gap:10px}.ev-community-avatar{width:74px;height:74px;flex-basis:74px}.ev-community-names h1{font-size:21px}}
+
+.ev-profile-cover-preview{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-top:12px;border:1px solid rgba(148,163,184,.25)}
+.profile-settings-form textarea,.profile-settings-form select{width:100%;font:inherit;color:inherit;background:rgba(15,23,42,.7);border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px;box-sizing:border-box}
+.profile-settings-form select{min-height:44px}
+.profile-photo-pick input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}

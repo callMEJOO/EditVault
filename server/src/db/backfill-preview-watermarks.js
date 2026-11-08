@@ -1,0 +1,68 @@
+'use strict';
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+const path = require('path');
+const fs = require('fs');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const execFileAsync = promisify(execFile);
+const db = require('./pool');
+const uploadDir = path.resolve(process.env.UPLOAD_DIR || './uploads');
+const ffmpeg = process.env.FFMPEG_PATH || 'ffmpeg';
+
+async function watermarkVideo(inputPath, outputPath) {
+  const filter = "drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':text='EDITVAULT':fontcolor=white@0.26:fontsize=h/20:borderw=2:bordercolor=black@0.16:x=(w-text_w)/2:y=(h-text_h)/2,drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':text='EDITVAULT':fontcolor=white@0.42:fontsize=h/38:borderw=1:bordercolor=black@0.18:x=w-text_w-24:y=h-text_h-22";
+  await execFileAsync(ffmpeg, [
+    '-hide_banner', '-loglevel', 'error', '-y', '-i', inputPath,
+    '-map', '0:v:0', '-map', '0:a?', '-vf', filter,
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '24', '-pix_fmt', 'yuv420p',
+    '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', outputPath,
+  ], { windowsHide: true, maxBuffer: 2 * 1024 * 1024 });
+}
+
+async function main() {
+  try {
+    const { rows } = await db.query('SELECT id, original_path, preview_path FROM edits WHERE original_path IS NOT NULL ORDER BY created_at ASC');
+    let processed = 0, skipped = 0, failed = 0;
+    for (const row of rows) {
+      const inputPath = path.resolve(row.original_path || '');
+      const relativePath = path.relative(uploadDir, inputPath);
+      if (!row.original_path || !relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath) || !fs.existsSync(inputPath)) {
+        console.warn(`[skip] ${row.id}: original path is missing or outside UPLOAD_DIR`);
+        skipped++;
+        continue;
+      }
+      // Build a full-length preview from the protected original, never from a short old preview.
+      const parsed = path.parse(inputPath);
+      const outputPath = path.join(parsed.dir, `${parsed.name}-editvault-preview.mp4`);
+      if (path.resolve(row.preview_path || '') === path.resolve(outputPath) && fs.existsSync(outputPath)) {
+        skipped++;
+        continue;
+      }
+      let generatedDuringThisRow = false;
+      try {
+        // Re-encode when the current DB path is not this output; this avoids adopting stale partial files.
+        await watermarkVideo(inputPath, outputPath);
+        generatedDuringThisRow = true;
+        await db.query('UPDATE edits SET preview_path = $1 WHERE id = $2', [outputPath, row.id]);
+        console.log(`[watermarked] ${row.id}: ${path.basename(outputPath)}`);
+        processed++;
+      } catch (error) {
+        console.error(`[failed] ${row.id}: ${error.message}`);
+        if (generatedDuringThisRow && fs.existsSync(outputPath)) {
+          // Keep a partial/invalid output from being served or reused on a later run.
+          try { fs.unlinkSync(outputPath); } catch { /* best effort */ }
+        }
+        failed++;
+      }
+    }
+    console.log(`Full-length watermark backfill finished. Updated: ${processed}; skipped: ${skipped}; failed: ${failed}. Original video and prior preview files were kept for rollback.`);
+    if (failed) process.exitCode = 1;
+  } catch (error) {
+    console.error('Watermark backfill failed:', error.message);
+    process.exitCode = 1;
+  } finally {
+    await db.end().catch(() => {});
+  }
+}
+
+main();

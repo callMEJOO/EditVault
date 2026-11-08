@@ -1,0 +1,26 @@
+.creator-application-backdrop{position:fixed;inset:0;z-index:140;display:grid;place-items:center;overflow:auto;padding:20px;background:rgba(5,5,10,.82);backdrop-filter:blur(12px)}
+.creator-application-modal{position:relative;width:min(520px,100%);max-height:min(92vh,820px);overflow:auto;padding:clamp(23px,4vw,34px);border:1px solid rgba(255,255,255,.12);border-radius:24px;background:radial-gradient(circle at 100% 0,rgba(190,255,67,.09),transparent 34%),linear-gradient(145deg,#1b1a23,#111116);box-shadow:0 30px 100px rgba(0,0,0,.5);color:#f8f7fb}
+.creator-application-close{position:absolute;top:16px;right:16px;display:grid;place-items:center;width:36px;height:36px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.035);color:#ebe8f2;cursor:pointer}
+.creator-application-icon{display:grid;place-items:center;width:48px;height:48px;margin-bottom:18px;border:1px solid rgba(200,255,69,.23);border-radius:15px;background:rgba(200,255,69,.08);color:#c8ff45}
+.creator-application-modal>.eyebrow{font-size:10px;letter-spacing:.13em;color:#a8a3b2}
+.creator-application-modal h2{margin:7px 40px 9px 0;font-size:clamp(27px,5vw,37px);line-height:1.08;letter-spacing:-.04em}
+.creator-application-modal h2 span{color:#c8ff45}
+.creator-application-intro{margin:0 0 23px;color:#aaa5b5;font-size:12px;line-height:1.8}
+.creator-application-form{display:grid;gap:16px}
+.creator-application-form label{display:flex;flex-direction:column;gap:8px;min-width:0;color:#e6e2ee;font-size:12px;font-weight:700}
+.creator-application-form label span,.creator-application-form label small{color:#9691a0;font-size:10px;font-weight:400}
+.creator-application-form input,.creator-application-form textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.04);color:#fff;padding:13px 14px;font:inherit;font-size:12px;outline:none}
+.creator-application-form textarea{resize:vertical;line-height:1.7}
+.creator-application-form input:focus,.creator-application-form textarea:focus{border-color:rgba(200,255,69,.55);box-shadow:0 0 0 3px rgba(200,255,69,.07)}
+.creator-application-submit,.creator-application-status button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:45px;padding:11px 15px;border:1px solid #c8ff45;border-radius:12px;background:#c8ff45;color:#17180e;font-size:12px;font-weight:800;cursor:pointer}
+.creator-application-submit:disabled{opacity:.55;cursor:not-allowed}
+.creator-application-state{padding:23px 12px;text-align:center;color:#b9b4c3;font-size:12px}
+.creator-application-status{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:start;padding:17px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:rgba(255,255,255,.03)}
+.creator-application-status.is-approved>svg{color:#c8ff45}.creator-application-status.is-pending>svg{color:#f1c66e}
+.creator-application-status>div{display:grid;gap:6px;min-width:0}.creator-application-status strong{font-size:13px}.creator-application-status span{color:#aba6b6;font-size:11px;line-height:1.7}.creator-application-status a{display:inline-flex;align-items:center;gap:5px;margin-top:4px;color:#c8ff45;font-size:11px;overflow-wrap:anywhere}
+.creator-application-status button{grid-column:2;justify-self:start;min-height:37px;padding:8px 13px}
+.creator-application-rejected{display:grid;gap:5px;padding:12px;border:1px solid rgba(255,121,121,.22);border-radius:12px;background:rgba(255,80,80,.05)}.creator-application-rejected strong{font-size:11px;color:#ffb4b4}.creator-application-rejected span{font-size:11px;line-height:1.7;color:#c5bfcc}
+.creator-application-error{padding:10px 12px;border:1px solid rgba(255,106,106,.24);border-radius:10px;color:#ffb7b7;background:rgba(255,106,106,.07);font-size:11px;line-height:1.6}
+.creator-application-footnote{display:flex;align-items:flex-start;gap:7px;margin-top:19px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);color:#898494;font-size:10px;line-height:1.7}.creator-application-footnote svg{flex:0 0 auto;margin-top:1px;color:#c8ff45}
+@media(max-width:480px){.creator-application-backdrop{padding:10px;align-items:end}.creator-application-modal{max-height:94dvh;padding:22px 18px;border-radius:21px}.creator-application-close{top:12px;right:12px;width:33px;height:33px}.creator-application-modal h2{font-size:28px}.creator-application-status{gap:9px;padding:13px}}
+@media(prefers-reduced-motion:reduce){.creator-application-backdrop{backdrop-filter:none}}

@@ -1,0 +1,13 @@
+/* AUTO TIKTOK USERNAME STATS */
+.profile-settings-followers-card{display:grid;gap:9px;padding:14px;border:1px solid #ffffff17;border-radius:10px;background:#ffffff04}
+.profile-settings-followers-title{display:flex;align-items:center;gap:7px;color:#aaa8b5;font-size:11px;font-weight:800}
+.profile-settings-followers-title svg{color:#c6ff4d}
+.profile-settings-followers-count{font-size:24px;letter-spacing:-.6px;color:#f3f1f8;overflow-wrap:anywhere}
+.profile-settings-refresh{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:9px 12px;border:1px solid #c6ff4d45;border-radius:8px;background:#c6ff4d0c;color:#c6ff4d;font-size:11px;font-weight:800;cursor:pointer}
+.profile-settings-refresh:hover:not(:disabled){background:#c6ff4d18;border-color:#c6ff4d95}
+.profile-settings-refresh:disabled{opacity:.45;cursor:not-allowed}
+.profile-settings-provider-note{display:block}
+.profile-settings-stats-message{padding:10px;border:1px solid #ffffff13;border-radius:8px;color:#d7d4e0;font-size:11px;line-height:1.65;overflow-wrap:anywhere}
+.profile-settings-refresh .is-spinning{animation:profile-stat-spin 1s linear infinite}
+@keyframes profile-stat-spin{to{transform:rotate(360deg)}}
+.public-creator-followers em{font-style:normal;color:#c6ff4d}

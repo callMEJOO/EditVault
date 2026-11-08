@@ -1,0 +1,368 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const root = process.cwd();
+const mainPath = path.join(root, 'client', 'src', 'main.jsx');
+const editsPath = path.join(root, 'server', 'src', 'routes', 'edits.js');
+const requiredFiles = [
+  mainPath,
+  editsPath,
+  path.join(root, 'client', 'src', 'EditVaultLibrary.jsx'),
+  path.join(root, 'client', 'src', 'purchase-library-upgrade.css'),
+  path.join(root, 'server', 'src', 'db', 'apply-purchase-library-upgrade.js'),
+];
+for (const file of requiredFiles) {
+  if (!fs.existsSync(file)) {
+    console.error(`Required file not found: ${path.relative(root, file)}`);
+    console.error('Extract this update into the EditVault project root. No project files were changed.');
+    process.exit(1);
+  }
+}
+
+let main = fs.readFileSync(mainPath, 'utf8');
+let edits = fs.readFileSync(editsPath, 'utf8');
+const originalMain = main;
+const originalEdits = edits;
+
+// Public catalogue: keep sold edits visible, and expose rating stats.
+if (!edits.includes('AS is_sold')) {
+  const previewMarker = '(e.preview_path IS NOT NULL) AS has_preview,';
+  if (!edits.includes(previewMarker)) {
+    console.error('Could not locate the public edit catalogue SELECT. No project files were changed.');
+    process.exit(1);
+  }
+  edits = edits.replace(previewMarker, `${previewMarker}
+        EXISTS (SELECT 1 FROM purchases p WHERE p.edit_id = e.id) AS is_sold,
+        COALESCE((SELECT ROUND(AVG(r.rating)::numeric, 1) FROM edit_reviews r WHERE r.edit_id = e.id), 0)::float AS avg_rating,
+        COALESCE((SELECT COUNT(*)::int FROM edit_reviews r WHERE r.edit_id = e.id), 0)::int AS rating_count,`);
+}
+
+// Return expanded details for the buyer's own library.
+if (!edits.includes('mine_review.rating AS my_rating')) {
+  const librarySelectPattern = /SELECT\s+p\.id AS purchase_id,\s+p\.created_at AS purchased_at,\s+e\.id,\s+e\.title,\s+e\.category,\s+e\.price_points\s+FROM purchases p\s+JOIN edits e ON e\.id = p\.edit_id\s+WHERE p\.buyer_id = \$1\s+ORDER BY p\.created_at DESC/s;
+  if (!librarySelectPattern.test(edits)) {
+    console.error('Could not locate the /mine/library SQL query. No project files were changed.');
+    process.exit(1);
+  }
+  const libraryQuery = [
+    'SELECT',
+    '        p.id AS purchase_id,',
+    '        p.created_at AS purchased_at,',
+    '        e.id, e.title, e.description, e.category, e.price_points,',
+    '        u.display_name AS creator_name,',
+    '        COALESCE((SELECT ROUND(AVG(r.rating)::numeric, 1) FROM edit_reviews r WHERE r.edit_id = e.id), 0)::float AS avg_rating,',
+    '        COALESCE((SELECT COUNT(*)::int FROM edit_reviews r WHERE r.edit_id = e.id), 0)::int AS rating_count,',
+    '        mine_review.rating AS my_rating,',
+    '        mine_review.comment AS my_comment',
+    '      FROM purchases p',
+    '      JOIN edits e ON e.id = p.edit_id',
+    '      JOIN users u ON u.id = e.creator_id',
+    '      LEFT JOIN edit_reviews mine_review ON mine_review.edit_id = e.id AND mine_review.buyer_id = p.buyer_id',
+    '      WHERE p.buyer_id = $1',
+    '      ORDER BY p.created_at DESC',
+  ].join('\n');
+  edits = edits.replace(librarySelectPattern, libraryQuery);
+}
+
+// Global one-of-one sales: SELECT ... FOR UPDATE on the edit row serializes concurrent attempts.
+if (!edits.includes('This one-of-one edit has already been sold.')) {
+  const priorBlockPattern = /    const \{ rows: prior \} = await client\.query\(\s*`\s*SELECT id\s*FROM purchases\s*WHERE buyer_id = \$1 AND edit_id = \$2\s*`,\s*\[req\.user\.id, edit\.id\]\s*\);\s*\n\s*if \(prior\.length\) \{\s*await client\.query\('ROLLBACK'\);\s*return res\.status\(409\)\.json\(\{\s*error: 'You already own this edit\.',\s*\}\);\s*\}/s;
+  if (!priorBlockPattern.test(edits)) {
+    console.error('Could not locate the existing duplicate-purchase check. No project files were changed.');
+    process.exit(1);
+  }
+  const priorSaleBlock = [
+    '    const { rows: priorSale } = await client.query(',
+    '      `SELECT id, buyer_id FROM purchases WHERE edit_id = $1 ORDER BY created_at ASC LIMIT 1`,',
+    '      [edit.id]',
+    '    );',
+    '',
+    '    if (priorSale.length) {',
+    "      await client.query('ROLLBACK');",
+    '      return res.status(409).json({',
+    '        error: priorSale[0].buyer_id === req.user.id',
+    "          ? 'You already own this edit.'",
+    "          : 'This one-of-one edit has already been sold.',",
+    '      });',
+    '    }',
+  ].join('\n');
+  edits = edits.replace(priorBlockPattern, priorSaleBlock);
+}
+
+// More accurate message if the unique index rejects a duplicate sale.
+edits = edits.replace(
+  /if \(error\.code === '23505'\) \{\s*return res\.status\(409\)\.json\(\{\s*error: 'You already own this edit\.',\s*\}\);\s*\}/,
+  "if (error.code === '23505') {\n      return res.status(409).json({ error: 'This edit has already been sold or is already in your library.' });\n    }"
+);
+
+// Add buyer-only ratings. Buyers may update their own rating; non-buyers cannot rate.
+if (!edits.includes("router.post('/:id/reviews'")) {
+  const previewRouteAnchor = '// GET /api/edits/:id/preview';
+  if (!edits.includes(previewRouteAnchor)) {
+    console.error('Could not locate the preview route for inserting reviews. No project files were changed.');
+    process.exit(1);
+  }
+  const reviewRoutes = [
+    '// GET /api/edits/:id/reviews - public aggregate and recent reviews.',
+    "router.get('/:id/reviews', async (req, res, next) => {",
+    '  try {',
+    '    const { rows } = await db.query(',
+    "      'SELECT r.rating, r.comment, r.created_at, u.display_name AS reviewer_name ' +",
+    "      'FROM edit_reviews r JOIN users u ON u.id = r.buyer_id ' +",
+    "      'WHERE r.edit_id = $1 ORDER BY r.created_at DESC LIMIT 30',",
+    '      [req.params.id]',
+    '    );',
+    '    const { rows: stats } = await db.query(',
+    "      'SELECT COALESCE(ROUND(AVG(rating)::numeric, 1), 0)::float AS avg_rating, COUNT(*)::int AS rating_count ' +",
+    "      'FROM edit_reviews WHERE edit_id = $1',",
+    '      [req.params.id]',
+    '    );',
+    '    res.json({ reviews: rows, avgRating: stats[0]?.avg_rating || 0, ratingCount: stats[0]?.rating_count || 0 });',
+    '  } catch (error) {',
+    '    next(error);',
+    '  }',
+    '});',
+    '',
+    '// POST /api/edits/:id/reviews - only confirmed buyers may rate an edit.',
+    "router.post('/:id/reviews', auth, async (req, res, next) => {",
+    '  try {',
+    '    const rating = Number(req.body?.rating);',
+    "    const comment = String(req.body?.comment || '').trim().slice(0, 600);",
+    "    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be an integer from 1 to 5.' });",
+    '    const { rows: owned } = await db.query(',
+    "      'SELECT 1 FROM purchases WHERE buyer_id = $1 AND edit_id = $2 LIMIT 1',",
+    '      [req.user.id, req.params.id]',
+    '    );',
+    "    if (!owned.length) return res.status(403).json({ error: 'Buy this edit before leaving a rating.' });",
+    '    const { rows } = await db.query(',
+    "      'INSERT INTO edit_reviews (buyer_id, edit_id, rating, comment) VALUES ($1, $2, $3, $4) ' +",
+    "      'ON CONFLICT (buyer_id, edit_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, updated_at = NOW() ' +",
+    "      'RETURNING id, rating, comment, created_at, updated_at',",
+    '      [req.user.id, req.params.id, rating, comment]',
+    '    );',
+    '    const { rows: stats } = await db.query(',
+    "      'SELECT ROUND(AVG(rating)::numeric, 1)::float AS avg_rating, COUNT(*)::int AS rating_count ' +",
+    "      'FROM edit_reviews WHERE edit_id = $1',",
+    '      [req.params.id]',
+    '    );',
+    '    res.status(200).json({ review: rows[0], avgRating: stats[0]?.avg_rating || 0, ratingCount: stats[0]?.rating_count || 0 });',
+    '  } catch (error) {',
+    '    next(error);',
+    '  }',
+    '});',
+    '',
+    '',
+  ].join('\n');
+  edits = edits.replace(previewRouteAnchor, reviewRoutes + previewRouteAnchor);
+}
+
+// The existing multi-page routing must be present before we add a separate /library page.
+if (!main.includes("const EDITVAULT_PAGE_PATHS = {") || !main.includes('data-page={activePage}')) {
+  console.error('Multipage routing was not detected in main.jsx. Apply the multipage upgrade first. No project files were changed.');
+  process.exit(1);
+}
+
+if (!main.includes("import EditVaultLibrary from './EditVaultLibrary.jsx';")) {
+  const styleImportPattern = /import\s+['"]\.\/styles\.css['"];?/;
+  if (!styleImportPattern.test(main)) {
+    console.error('Could not locate the base stylesheet import in main.jsx. No project files were changed.');
+    process.exit(1);
+  }
+  main = main.replace(styleImportPattern, (match) => `${match}\nimport EditVaultLibrary from './EditVaultLibrary.jsx';`);
+}
+
+if (!main.includes("import './purchase-library-upgrade.css';")) {
+  const cssImports = [...main.matchAll(/import\s+['"][^'"]+\.css['"];?/g)];
+  if (!cssImports.length) {
+    console.error('Could not locate a stylesheet import in main.jsx. No project files were changed.');
+    process.exit(1);
+  }
+  const last = cssImports[cssImports.length - 1];
+  const insertAt = last.index + last[0].length;
+  main = main.slice(0, insertAt) + "\nimport './purchase-library-upgrade.css';" + main.slice(insertAt);
+}
+
+if (!main.includes("library: '/library'")) {
+  const pathAnchor = /([\t ]*editlab\s*:\s*['"]\/editlab['"],)/;
+  if (!pathAnchor.test(main)) {
+    console.error('Could not find the EditLab route in EDITVAULT_PAGE_PATHS. No project files were changed.');
+    process.exit(1);
+  }
+  main = main.replace(pathAnchor, `$1\n  library: '/library',`);
+}
+
+if (!main.includes("library: 'library'")) {
+  const sectionMapPattern = /(const sectionToPage = \{[\s\S]*?editlab\s*:\s*['"]editlab['"],)/;
+  if (sectionMapPattern.test(main)) {
+    main = main.replace(sectionMapPattern, `$1\n      library: 'library',`);
+  } else {
+    console.error('Could not find sectionToPage in main.jsx. No project files were changed.');
+    process.exit(1);
+  }
+}
+
+// Add the route title labels without mixing Arabic and English labels.
+const bilingualLabelsPattern = /const pageLabels = language === ['"]ar['"] \? \{([\s\S]*?)\} : \{([\s\S]*?)\};/;
+const bilingualLabelsMatch = main.match(bilingualLabelsPattern);
+if (bilingualLabelsMatch) {
+  let arabicLabels = bilingualLabelsMatch[1];
+  let englishLabels = bilingualLabelsMatch[2];
+  if (!/library\s*:/.test(arabicLabels)) arabicLabels += "\n      library: 'مكتبتي',";
+  if (!/library\s*:/.test(englishLabels)) englishLabels += "\n      library: 'My Library',";
+  main = main.replace(bilingualLabelsPattern, `const pageLabels = language === 'ar' ? {${arabicLabels}\n    } : {${englishLabels}\n    };`);
+} else if (/const pageLabels = \{/.test(main)) {
+  main = main.replace(/(const pageLabels = \{[\s\S]*?editlab\s*:\s*['"]EditLab['"],)(?!\s*library\s*:)/, `$1\n      library: 'My Library',`);
+}
+
+// Add My Library to the header navigation.
+if (!main.includes('href="#library"')) {
+  const navMatches = [...main.matchAll(/<nav\b[^>]*>[\s\S]*?<\/nav>/g)];
+  const navMatch = navMatches.find((match) => match[0].includes('href="#explore"'));
+  if (!navMatch) {
+    console.error('Could not locate the navigation block containing Explore. No project files were changed.');
+    process.exit(1);
+  }
+  const link = "\n          <a className={activePage === 'library' ? 'nav-active' : ''} href=\"#library\" onClick={() => setMobileNav(false)}>My Library</a>\n        ";
+  const updatedNav = navMatch[0].replace('</nav>', `${link}</nav>`);
+  main = main.slice(0, navMatch.index) + updatedNav + main.slice(navMatch.index + navMatch[0].length);
+}
+
+// Map API fields into cards.
+if (!main.includes('avgRating: Number(row.avg_rating || 0)')) {
+  const priceMarker = 'price: Number(row.price_points || 0),';
+  if (!main.includes(priceMarker)) {
+    console.error('Could not locate the API-to-card mapping in main.jsx. No project files were changed.');
+    process.exit(1);
+  }
+  main = main.replace(priceMarker, `${priceMarker}
+            sold: Boolean(row.is_sold),
+            avgRating: Number(row.avg_rating || 0),
+            ratingCount: Number(row.rating_count || 0),`);
+}
+
+// Ratings appear beneath each edit card title.
+if (!main.includes('ev-card-review-summary')) {
+  const titleMarker = '<h3>{edit.title}</h3>';
+  if (!main.includes(titleMarker)) {
+    console.error('Could not locate the edit card title. No project files were changed.');
+    process.exit(1);
+  }
+  const ratingMarkup = [
+    titleMarker,
+    '                  <div className="ev-card-review-summary" aria-label={String(Number(edit.avgRating || 0).toFixed(1)) + " out of 5, " + String(edit.ratingCount || 0) + " ratings"}>',
+    "                    <span className=\"ev-card-review-stars\">{'★'.repeat(Math.max(0, Math.min(5, Math.round(edit.avgRating || 0))))}{'☆'.repeat(5 - Math.max(0, Math.min(5, Math.round(edit.avgRating || 0))))}</span>",
+    "                    <span>{edit.ratingCount ? Number(edit.avgRating || 0).toFixed(1) : 'New'}</span>",
+    "                    <span className=\"ev-card-review-count\">{edit.ratingCount ? '(' + edit.ratingCount + ' ratings)' : 'No ratings yet'}</span>",
+    '                    {edit.sold && !purchased.includes(edit.id) && <span className="ev-sold-badge">ONE-OF-ONE · SOLD</span>}',
+    '                  </div>',
+  ].join('\n');
+  main = main.replace(titleMarker, ratingMarkup);
+}
+
+// Download original files through the authenticated API.
+if (!main.includes('const downloadEdit = async (edit) => {')) {
+  const buyAnchor = '  const buy = async (edit) => {';
+  if (!main.includes(buyAnchor)) {
+    console.error('Could not locate the existing purchase handler. No project files were changed.');
+    process.exit(1);
+  }
+  const downloadHandler = [
+    '  const downloadEdit = async (edit) => {',
+    "    const token = localStorage.getItem('editvault_token');",
+    '    if (!token) {',
+    "      setNotice('Please log in again to download your edit.');",
+    "      openAuth('login');",
+    '      return;',
+    '    }',
+    '    try {',
+    "      const response = await fetch(API_URL + '/api/edits/' + edit.id + '/download', { headers: { Authorization: 'Bearer ' + token } });",
+    '      if (!response.ok) {',
+    '        const data = await response.json().catch(() => ({}));',
+    "        throw new Error(data.error || 'Download failed. Please try again.');",
+    '      }',
+    '      const blob = await response.blob();',
+    '      const objectUrl = URL.createObjectURL(blob);',
+    "      const anchor = document.createElement('a');",
+    "      const disposition = response.headers.get('content-disposition') || '';",
+    "      const match = disposition.match(/filename=\"?([^\";]+)\"?/i);",
+    "      const filename = match ? match[1] : (String(edit.title || 'edit').replace(/[^a-z0-9._-]+/gi, '-') || 'edit') + '.mp4';",
+    '      anchor.href = objectUrl;',
+    '      anchor.download = filename;',
+    '      document.body.appendChild(anchor);',
+    '      anchor.click();',
+    '      anchor.remove();',
+    '      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);',
+    "      setNotice('Downloading “' + edit.title + '”.');",
+    '    } catch (error) {',
+    "      setNotice(error.message || 'Download failed.');",
+    '    }',
+    '  };',
+    '',
+    '',
+  ].join('\n');
+  main = main.replace(buyAnchor, downloadHandler + buyAnchor);
+}
+
+// An already-owned item downloads; an edit sold to someone else remains visible but cannot be purchased.
+const buyButtonPattern = /<button\s+className=\{\s*purchased\.includes\(edit\.id\)\s*\?\s*['"]buy-btn owned['"]\s*:\s*['"]buy-btn['"]\s*\}\s+onClick=\{\(\) => buy\(edit\)\}\s*>[\s\S]*?<\/button>/;
+if (!main.includes('onClick={() => purchased.includes(edit.id) ? downloadEdit(edit) : buy(edit)}')) {
+  if (!buyButtonPattern.test(main)) {
+    console.error('Could not locate the edit purchase button. No project files were changed.');
+    process.exit(1);
+  }
+  const newBuyButton = [
+    '<button',
+    "                      className={purchased.includes(edit.id) ? 'buy-btn owned' : edit.sold ? 'buy-btn sold' : 'buy-btn'}",
+    '                      disabled={!purchased.includes(edit.id) && (Boolean(edit.sold) || purchaseLoading)}',
+    '                      onClick={() => purchased.includes(edit.id) ? downloadEdit(edit) : buy(edit)}',
+    '                    >',
+    '                      {purchased.includes(edit.id) ? (',
+    '                        <><Download size={14} /> Download</>',
+    '                      ) : edit.sold ? (',
+    "                        'Sold out'",
+    '                      ) : purchaseLoading ? (',
+    "                        'Processing...'",
+    '                      ) : (',
+    '                        <>Buy once <ArrowUpRight size={14} /></>',
+    '                      )}',
+    '                    </button>',
+  ].join('\n');
+  main = main.replace(buyButtonPattern, newBuyButton);
+}
+
+// Mount the library page as a separate main child so route CSS can isolate it completely.
+if (!main.includes('<EditVaultLibrary ')) {
+  const mainClose = main.lastIndexOf('</main>');
+  if (mainClose === -1 || !main.includes('<main id="top">')) {
+    console.error('Could not locate main#top for inserting the library page. No project files were changed.');
+    process.exit(1);
+  }
+  const libraryComponent = [
+    '',
+    '        <EditVaultLibrary',
+    "          active={activePage === 'library'}",
+    '          user={user}',
+    "          onLogin={() => openAuth('login')}",
+    '          onNotice={setNotice}',
+    '          onReviewSaved={(editId, avgRating, ratingCount) => setEdits((current) => current.map((edit) => edit.id === editId ? { ...edit, avgRating, ratingCount } : edit))}',
+    '        />',
+    '      ',
+  ].join('\n');
+  main = main.slice(0, mainClose) + libraryComponent + main.slice(mainClose);
+}
+
+// All preflight checks have passed. Back up changed source files before writing.
+const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+function backupAndWrite(filePath, contents, originalContents) {
+  if (contents === originalContents) return;
+  fs.copyFileSync(filePath, `${filePath}.pre-purchase-library-${stamp}.bak`);
+  fs.writeFileSync(filePath, contents, 'utf8');
+}
+backupAndWrite(mainPath, main, originalMain);
+backupAndWrite(editsPath, edits, originalEdits);
+
+console.log('EditVault purchase/library upgrade source patch applied.');
+console.log('Added one-of-one sales, buyer ratings, original downloads, and a dedicated My Library page.');
+console.log('Backups were created for changed source files. Next run the database migration from the server folder.');

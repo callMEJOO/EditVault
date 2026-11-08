@@ -1,0 +1,53 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+
+'use strict';
+
+const db = require('./pool');
+
+(async () => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS edit_reviews (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        buyer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        edit_id UUID NOT NULL REFERENCES edits(id) ON DELETE CASCADE,
+        rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        comment TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT edit_reviews_one_per_buyer UNIQUE (buyer_id, edit_id),
+        CONSTRAINT edit_reviews_comment_length CHECK (char_length(comment) <= 600)
+      )
+    `);
+    await db.query('CREATE INDEX IF NOT EXISTS idx_edit_reviews_edit_created ON edit_reviews (edit_id, created_at DESC)');
+
+    // Keep old test data intact. The API also locks each edit row during a purchase,
+    // so new sales remain one-of-one even if legacy duplicate purchase rows exist.
+    const { rows: duplicateRows } = await db.query(`
+      SELECT edit_id, COUNT(*)::int AS sale_count
+      FROM purchases
+      GROUP BY edit_id
+      HAVING COUNT(*) > 1
+      LIMIT 5
+    `);
+
+    if (duplicateRows.length === 0) {
+      await db.query('CREATE UNIQUE INDEX IF NOT EXISTS purchases_one_time_edit_idx ON purchases (edit_id)');
+      console.log('Created/verified one-sale-per-edit unique index.');
+    } else {
+      console.warn('Legacy duplicate purchase records were found; they were not deleted.');
+      console.warn('The API purchase transaction still blocks new sales of any edit that already has a purchase.');
+      console.warn('A unique index was not created until the legacy duplicates are reviewed.');
+      console.warn(`Duplicate edit IDs (up to 5): ${duplicateRows.map((row) => `${row.edit_id} (${row.sale_count})`).join(', ')}`);
+    }
+
+    console.log('EditVault purchase/library upgrade migration completed.');
+  } catch (error) {
+    console.error('Purchase/library migration failed:', error.message);
+    process.exitCode = 1;
+  } finally {
+    if (typeof db.end === 'function') {
+      await db.end().catch(() => {});
+    }
+  }
+})();

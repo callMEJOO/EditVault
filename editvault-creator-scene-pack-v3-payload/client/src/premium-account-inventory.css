@@ -1,0 +1,197 @@
+/* Private account inventory, instant delivery, and responsive administrator tools. */
+.premium-stock-count {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 7px 9px;
+  max-width: 100%;
+  border: 1px solid rgba(198, 255, 77, .22);
+  border-radius: 8px;
+  color: #c6ff4d;
+  background: rgba(198, 255, 77, .055);
+  font-size: 10px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.premium-admin-form select,
+.premium-stock-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #373740;
+  border-radius: 9px;
+  outline: none;
+  color: #f7f7f9;
+  background: #111114;
+  font: inherit;
+  font-size: 14px;
+}
+
+.premium-admin-form select {
+  min-height: 46px;
+  padding: 12px 14px;
+}
+
+.premium-admin-form select:focus,
+.premium-stock-form textarea:focus {
+  border-color: #b8ff35;
+  box-shadow: 0 0 0 3px rgba(184, 255, 53, .09);
+}
+
+.premium-inventory-field small {
+  color: #a9a8b4;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+.premium-admin-product-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.premium-stock-form {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.premium-stock-form label {
+  display: grid;
+  gap: 7px;
+  color: #c9c9d2;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.premium-stock-form textarea {
+  min-height: 78px;
+  resize: vertical;
+  padding: 11px 12px;
+  line-height: 1.65;
+}
+
+.premium-stock-form textarea::placeholder {
+  color: #70707c;
+}
+
+.premium-stock-form button {
+  justify-self: start;
+  min-height: 38px;
+}
+
+.premium-admin-item {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.premium-admin-item-info {
+  overflow-wrap: anywhere;
+}
+
+.premium-admin-item .premium-stock-form {
+  grid-column: 1 / -1;
+}
+
+.premium-order {
+  flex-wrap: wrap;
+}
+
+.premium-past-delivery {
+  flex: 1 0 100%;
+  min-width: 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 11px;
+}
+
+.premium-past-delivery summary {
+  width: fit-content;
+  cursor: pointer;
+  color: #c6ff4d;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.premium-past-delivery pre,
+.premium-delivery-content {
+  max-width: 100%;
+  max-height: 40vh;
+  overflow: auto;
+  margin: 12px 0 0;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  color: #f1f0f6;
+  background: #0c0c10;
+  font: 12px/1.75 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  user-select: text;
+}
+
+.premium-delivery-backdrop {
+  z-index: 140;
+  padding: 12px;
+}
+
+.premium-delivery-modal {
+  width: min(620px, calc(100vw - 24px));
+  max-width: 620px;
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.premium-delivery-modal h2 {
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+.premium-delivery-modal > p {
+  color: #aaa8b6;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.premium-delivery-content {
+  max-height: min(45vh, 400px);
+  margin: 16px 0;
+}
+
+@media (max-width: 640px) {
+  .premium-stock-count {
+    font-size: 9px;
+  }
+
+  .premium-admin-item {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch;
+  }
+
+  .premium-admin-product-actions {
+    justify-content: flex-start;
+  }
+
+  .premium-stock-form button {
+    width: 100%;
+  }
+
+  .premium-past-delivery pre {
+    font-size: 11px;
+  }
+
+  .premium-delivery-modal {
+    padding: 18px;
+    border-radius: 16px;
+  }
+}

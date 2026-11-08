@@ -1,0 +1,11 @@
+Add this line near the other route imports in server/src/index.js:
+
+const profileMediaRoutes = require('./routes/profile-media');
+
+Add this line alongside the existing app.use('/api/...') route mounts,
+before the final error-handler middleware:
+
+app.use('/api/profile', profileMediaRoutes);
+
+Do not replace server/src/index.js with a file from this patch; keep your existing
+Apify, studio, edits, premium, wallet, and authentication routes.

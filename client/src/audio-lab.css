@@ -1,0 +1,75 @@
+/* EditVault Audio Lab V2 — responsive audio processing workspace */
+.evlr-root .eval-root{--eval-lime:#c6ff4d;color:#f4f8f0;min-width:0;padding:10px 0 24px}
+.evlr-root .eval-heading{position:relative;overflow:hidden;background:radial-gradient(ellipse at 88% 5%,#c6ff4d1b,transparent 45%),linear-gradient(130deg,#1b211c,#111713);padding:clamp(20px,3.6vw,44px);border:1px solid #ffffff20;border-radius:19px;margin:18px 0 22px}
+.evlr-root .eval-eyebrow{display:flex;align-items:center;gap:8px;font:700 11px 'DM Mono',monospace;color:#b9ff5b;letter-spacing:.1em}
+.evlr-root .eval-eyebrow>span{width:7px;height:7px;background:#c6ff4d;border-radius:50%;box-shadow:0 0 12px #c6ff4d}
+.evlr-root .eval-heading h2{font-size:clamp(27px,4vw,49px);line-height:1.15;margin:20px 0 12px;letter-spacing:-.04em}
+.evlr-root[dir=rtl] .eval-heading h2{letter-spacing:0}
+.evlr-root .eval-heading h2 em{font-style:normal;color:var(--eval-lime)}
+.evlr-root .eval-heading p{color:#abb6aa;font-size:13px;line-height:1.9;max-width:600px;margin:0}
+.evlr-root .eval-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.evlr-root .eval-chips>span{display:flex;align-items:center;gap:7px;border:1px solid #c6ff4d32;border-radius:8px;background:#c6ff4d09;color:#c7d8c4;font-size:11px;padding:8px 10px}
+.evlr-root .eval-chips svg{color:#c6ff4d}
+.evlr-root .eval-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:17px;align-items:start}
+.evlr-root .eval-panel{min-width:0;background:#161a17;border:1px solid #ffffff1b;border-radius:17px;padding:23px}
+.evlr-root .eval-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 20px}
+.evlr-root .eval-panel-head>div>span{color:#a5e574;font:700 10px 'DM Mono',monospace;letter-spacing:.08em}
+.evlr-root .eval-panel-head h3{font-size:20px;letter-spacing:-.03em;margin:7px 0 0}
+.evlr-root .eval-panel-head svg{color:#c6ff4d}
+.evlr-root .eval-filters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:15px}
+.evlr-root .eval-filters button{border:1px solid #ffffff20;border-radius:8px;color:#b6c2b8;background:#ffffff06;font-size:11px;font-weight:700;padding:9px 11px;transition:.2s}
+.evlr-root .eval-filters button.is-active{border-color:#c6ff4d70;background:#c6ff4d13;color:#c6ff4d}
+.evlr-root .eval-tools{display:grid;gap:8px}
+.evlr-root .eval-tool{width:100%;display:flex;align-items:center;gap:11px;min-width:0;text-align:start;color:#f2f5f0;border:1px solid #ffffff15;border-radius:12px;padding:13px;background:#101512;transition:border-color .2s,background .2s,transform .2s}
+.evlr-root .eval-tool:hover{background:#1c281d;border-color:#c6ff4d69;transform:translateY(-1px)}
+.evlr-root .eval-tool.is-active{background:linear-gradient(110deg,#273a21,#141b15);border-color:#c6ff4d85;box-shadow:inset 3px 0 0 #c6ff4d}
+.evlr-root[dir=rtl] .eval-tool.is-active{box-shadow:inset -3px 0 0 #c6ff4d}
+.evlr-root .eval-tool-icon{flex:0 0 40px;width:40px;height:40px;display:grid;place-items:center;background:#c6ff4d12;border:1px solid #c6ff4d30;border-radius:11px;color:#c6ff4d}
+.evlr-root .eval-tool-copy{display:grid;min-width:0;flex:1;gap:5px}
+.evlr-root .eval-tool-copy strong{font-size:13px;line-height:1.5}
+.evlr-root .eval-tool-copy small{font-size:10px;line-height:1.5;color:#99a69b}
+.evlr-root .eval-price{display:grid;gap:2px;text-align:center;min-width:44px;color:#c6ff4d}
+.evlr-root .eval-price b{font:800 20px 'DM Mono',monospace}
+.evlr-root .eval-price small{font-size:9px}
+.evlr-root .eval-drop{display:flex;width:100%;min-height:210px;align-items:center;justify-content:center;gap:9px;flex-direction:column;padding:20px;color:#fff;border:1px dashed #c6ff4d57;border-radius:13px;background:linear-gradient(155deg,#c6ff4d08,#0b100d);text-align:center}
+.evlr-root .eval-drop>span{width:55px;height:55px;display:grid;place-items:center;color:#c6ff4d;border:1px solid #c6ff4d40;background:#c6ff4d14;border-radius:15px}
+.evlr-root .eval-drop strong{font-size:15px}.evlr-root .eval-drop small{font-size:11px;color:#a7b3a7;line-height:1.6}.evlr-root .eval-drop em{color:#c6ff4d;font-size:10px;font-style:normal}
+.evlr-root .eval-file-wrap{min-width:0}.evlr-root .eval-file-line{display:flex;align-items:center;gap:10px;min-width:0;padding:13px;background:#0c120e;border:1px solid #ffffff1a;border-radius:12px}
+.evlr-root .eval-file-icon{width:37px;height:37px;flex:none;display:grid;place-items:center;border-radius:10px;background:#c6ff4d15;color:#c6ff4d}
+.evlr-root .eval-file-line>div:nth-child(2){display:grid;gap:4px;min-width:0;flex:1}.evlr-root .eval-file-line strong{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px}.evlr-root .eval-file-line small{color:#a5aea5;font-size:10px}
+.evlr-root .eval-file-line>button{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:7px;border:1px solid #ffffff16;color:#eaf5e5;background:#ffffff07}
+.evlr-root .eval-file-wrap>video{display:block;width:100%;max-height:225px;margin-top:12px;background:#090b09;border-radius:10px}
+.evlr-root .eval-file-wrap>audio{display:block;width:100%;margin-top:14px}.evlr-root .eval-file-wrap>p{color:#a7b7a8;font-size:11px}
+.evlr-root .eval-trim{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.evlr-root .eval-trim label{display:grid;gap:7px;color:#bbcab7;font-size:11px}.evlr-root .eval-trim input{width:100%;min-width:0;border-radius:8px;padding:12px;background:#0b110c;color:#f2f8f0;border:1px solid #ffffff25;outline:0}
+.evlr-root .eval-trim input:focus{border-color:#c6ff4d}
+.evlr-root .eval-checkout{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:21px;padding:15px 0;border-top:1px solid #ffffff20;border-bottom:1px solid #ffffff20}
+.evlr-root .eval-checkout>div{display:grid;gap:6px;min-width:0}.evlr-root .eval-checkout small{color:#9baa9c;font-size:9px;letter-spacing:.07em}.evlr-root .eval-checkout strong{display:flex;align-items:center;gap:6px;font-size:13px}.evlr-root .eval-checkout>div:last-child strong{color:#c6ff4d}
+.evlr-root .eval-export{width:100%;display:flex;justify-content:center;align-items:center;gap:10px;min-height:49px;margin-top:17px;border:0;border-radius:11px;background:#c6ff4d;color:#121b10;font-weight:850;font-size:13px;transition:background .2s}
+.evlr-root .eval-export:not(:disabled):hover{background:#e1ff9f}.evlr-root .eval-export:disabled{opacity:.48;cursor:not-allowed}
+.evlr-root .eval-hint{margin-top:11px;color:#93a293;font-size:10px;line-height:1.8}.evlr-root .eval-error{padding:12px;border:1px solid #ed666666;border-radius:10px;color:#ffb9b9;background:#ed666610;margin-top:14px;font-size:12px;overflow-wrap:anywhere}
+.evlr-root .eval-success{display:flex;align-items:center;gap:10px;margin-top:13px;padding:13px;border:1px solid #c6ff4d59;background:#c6ff4d0b;border-radius:10px}.evlr-root .eval-success>svg{color:#c6ff4d;flex:none}.evlr-root .eval-success>div{min-width:0;flex:1;display:grid;gap:5px}.evlr-root .eval-success strong{font-size:12px}.evlr-root .eval-success small{font-size:10px;color:#aabbab;overflow-wrap:anywhere}.evlr-root .eval-success a{white-space:nowrap;color:#c6ff4d;font-size:11px;font-weight:800}
+.evlr-root .eval-footnote{margin-top:18px;display:flex;align-items:center;gap:15px;padding:16px;border-radius:12px;background:#b9a4e40c;border:1px solid #b9a4e431}.evlr-root .eval-footnote>span{white-space:nowrap;display:flex;align-items:center;gap:6px;color:#cfb7ff;font:800 10px 'DM Mono',monospace}.evlr-root .eval-footnote p{margin:0;color:#a9b1aa;font-size:11px;line-height:1.75}
+.evlr-root .eval-spin{animation:eval-spin .9s linear infinite}@keyframes eval-spin{to{transform:rotate(360deg)}}
+@media(max-width:950px){.evlr-root .eval-layout{grid-template-columns:1fr}.evlr-root .eval-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.evlr-root .eval-panel{padding:18px}}
+@media(max-width:640px){.evlr-root .eval-heading{margin-top:9px;padding:21px}.evlr-root .eval-heading h2{font-size:29px}.evlr-root .eval-tools{grid-template-columns:1fr}.evlr-root .eval-panel{padding:15px}.evlr-root .eval-checkout strong{font-size:11px}.evlr-root .eval-footnote{flex-direction:column;align-items:flex-start}.evlr-root .eval-success{flex-wrap:wrap}.evlr-root .eval-success a{width:100%;text-align:center;padding-top:9px;border-top:1px solid #ffffff1e}}
+@media(prefers-reduced-motion:reduce){.evlr-root .eval-root *, .evlr-root .eval-root *::before, .evlr-root .eval-root *::after{animation:none!important;transition:none!important}}
+
+/* EditVault Audio Preview V2.2 — preview player / explicit download */
+.evlr-root .eval-preview-result{margin-top:17px;padding:18px;border:1px solid #c6ff4d58;border-radius:15px;background:radial-gradient(ellipse at 0 0,#c6ff4d14,transparent 65%),#101711;box-shadow:0 12px 30px #0003}
+.evlr-root .eval-preview-heading{display:flex;align-items:center;gap:12px;margin-bottom:17px}
+.evlr-root .eval-preview-icon{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:12px;color:#c6ff4d;background:#c6ff4d16;border:1px solid #c6ff4d45}
+.evlr-root .eval-preview-heading>div{display:grid;gap:5px;min-width:0}
+.evlr-root .eval-preview-heading strong{font-size:15px;color:#f8fff1}
+.evlr-root .eval-preview-heading small{font-size:11px;line-height:1.6;color:#a9b7a5}
+.evlr-root .eval-preview-track{padding:14px;border:1px solid #ffffff1c;border-radius:12px;background:#0c100e}
+.evlr-root .eval-preview-track-title{display:flex;align-items:center;gap:8px;color:#eaf7e4;font-size:12px;font-weight:800;margin-bottom:12px}
+.evlr-root .eval-preview-track-title svg{color:#c6ff4d}
+.evlr-root .eval-preview-badge{margin-inline-start:auto;font:700 10px 'DM Mono',monospace;color:#c6ff4d;border:1px solid #c6ff4d55;border-radius:6px;padding:4px 7px}
+.evlr-root .eval-preview-track audio{display:block;width:100%;min-width:0;max-width:100%;height:47px;accent-color:#c6ff4d}
+.evlr-root .eval-preview-file{display:block;min-width:0;margin-top:9px;color:#94a38f;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evlr-root .eval-preview-download{display:flex;justify-content:center;align-items:center;gap:10px;width:100%;min-height:48px;margin-top:13px;padding:12px 16px;border:1px solid #c6ff4d;border-radius:11px;background:#c6ff4d;color:#111a0d!important;font-size:13px;font-weight:850;text-decoration:none;transition:background .2s,transform .2s}
+.evlr-root .eval-preview-download:hover{background:#e1ff9f;transform:translateY(-1px)}
+.evlr-root .eval-preview-download:focus-visible{outline:3px solid #f2ffd2;outline-offset:3px}
+.evlr-root .eval-preview-help{font-size:10px;line-height:1.8;color:#9daa9b;margin:11px 0 0}
+@media(max-width:640px){.evlr-root .eval-preview-result{padding:14px}.evlr-root .eval-preview-heading{align-items:flex-start}.evlr-root .eval-preview-heading strong{font-size:14px}.evlr-root .eval-preview-track{padding:11px}}
+@media(prefers-reduced-motion:reduce){.evlr-root .eval-preview-download{transition:none}.evlr-root .eval-preview-download:hover{transform:none}}

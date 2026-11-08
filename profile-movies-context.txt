@@ -1,0 +1,460 @@
+===== PROFILE SETTINGS REST =====
+
+      if (next?.tiktok_url) {
+        setRefreshing(true);
+        try {
+          const refreshResponse = await fetch(`${API_URL}/api/studio/profile/refresh-followers`, {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          });
+          const refreshData = await readJson(refreshResponse);
+          next = { ...next, ...(refreshData.user || {}) };
+          setProfile(next);
+          onUserUpdate?.(next);
+          onNotice?.(refreshData.message || 'Profile saved and TikTok followers refreshed.');
+        } catch (refreshError) {
+          setError(`Profile saved, but follower refresh failed: ${refreshError.message}`);
+          onNotice?.('Profile saved. TikTok follower refresh failed; check the message in Profile.');
+        } finally {
+          setRefreshing(false);
+        }
+      } else {
+        onNotice?.(data.message || 'Profile saved.');
+      }
+    } catch (requestError) {
+      setError(requestError.message || 'Could not save your profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const followers = profile?.tiktok_followers;
+  const updatedAt = profile?.tiktok_followers_updated_at;
+
+  return (
+    <div className="profile-settings-backdrop" onClick={onClose}>
+      <section className="profile-settings-modal" role="dialog" aria-modal="true" aria-label="Profile settings" onClick={(event) => event.stopPropagation()}>
+        <header className="profile-settings-header">
+          <div className="profile-settings-title-icon"><UserRound size={21} /></div>
+          <div><div className="eyebrow">YOUR ACCOUNT</div><h2>Profile settings</h2><p>Manage the public identity shown on your creator page.</p></div>
+          <button className="profile-settings-close" type="button" onClick={onClose} aria-label="Close profile settings"><X size={19} /></button>
+        </header>
+
+        {loading ? <div className="profile-settings-state">Loading profileâ€¦</div> : (
+          <form className="profile-settings-form" onSubmit={saveProfile}>
+            <section className="profile-photo-card" aria-label="Profile photo">
+              <div className="profile-photo-preview">
+                {currentAvatar ? <img src={currentAvatar} alt="Profile preview" /> : <span>{String(displayName || user?.email || 'U').trim().charAt(0).toUpperCase()}</span>}
+                <span className="profile-photo-camera"><Camera size={15} /></span>
+              </div>
+              <div className="profile-photo-main">
+                <strong>Profile photo</strong>
+                <small>Shown beside your name and on your public creator page after approval.</small>
+                <div className="profile-photo-actions">
+                  <label className="profile-photo-pick">Choose photo
+                    <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarFile} aria-label="Choose profile photo" />
+                  </label>
+                  {currentAvatar && <button type="button" className="profile-photo-remove" onClick={() => setAvatarDraft('')} disabled={avatarBusy}><Trash2 size={13} /> Remove</button>}
+                  {avatarDraft !== null && <button type="button" className="profile-photo-save" onClick={saveAvatar} disabled={avatarBusy}>{avatarBusy ? 'Saving…' : <><Save size={13} /> Save photo</>}</button>}
+                </div>
+              </div>
+            </section>
+
+            {profile?.role === 'creator' && <div className="profile-role-notice is-creator"><BadgeCheck size={16} /><span><strong>Creator access approved</strong><small>Your public profile settings are managed separately from creator access.</small></span></div>}
+
+            <label>Public page name
+              <input required minLength={2} maxLength={50} value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Your creator name" />
+            </label>
+            <label>TikTok profile URL
+              <input type="url" value={tiktokUrl} onChange={(event) => setTiktokUrl(event.target.value)} placeholder="https://www.tiktok.com/@username" />
+              <small>This URL and follower information belong to your public profile only.</small>
+            </label>
+
+            <div className="profile-settings-followers">
+              <div className="profile-settings-followers-icon"><Users size={19} /></div>
+              <div className="profile-settings-followers-copy">
+                <span>TikTok followers</span>
+                <strong>{followers === null || followers === undefined ? 'Not synced yet' : Number(followers).toLocaleString()}</strong>
+                <small>{updatedAt ? `Last synced ${new Date(updatedAt).toLocaleString()}` : 'No successful sync yet'}</small>
+              </div>
+              {updatedAt && <CheckCircle2 className="profile-settings-success-icon" size={18} />}
+            </div>
+            <p className="profile-settings-help">Follower count is fetched from the public TikTok profile using Apify. It can be delayed or unavailable if TikTok or the Actor blocks the request.</p>
+
+            <div className="profile-settings-help profile-settings-profile-note">Creator applications are handled separately from these public profile settings. Changing this name, photo, or TikTok link will not submit or change an application.</div>
+
+            {error && <div className="profile-settings-error" role="alert">{error}</div>}
+
+            <div className="profile-settings-actions">
+              <button className="primary-cta" type="submit" disabled={saving || loading || !profile}>
+                <Save size={16} /> {saving ? 'Savingâ€¦' : 'Save profile'}
+              </button>
+              <button className="secondary-cta" type="button" onClick={refreshFollowers} disabled={refreshing || saving || !profile?.tiktok_url}>
+                <RefreshCw size={16} className={refreshing ? 'profile-settings-spinning' : ''} /> {refreshing ? 'Refreshingâ€¦' : 'Refresh followers'}
+              </button>
+            </div>
+            {profile?.tiktok_url && <a className="profile-settings-tiktok-link" href={profile.tiktok_url} target="_blank" rel="noreferrer">Open TikTok profile <ExternalLink size={14} /></a>}
+          </form>
+        )}
+      </section>
+    </div>
+  );
+}
+===== MAIN IMPORTS AND STATE =====
+import React, { useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  Search,
+  Coins,
+  ShieldCheck,
+  Play,
+  Download,
+  Sparkles,
+  Clapperboard,
+  Menu,
+  X,
+  ArrowUpRight,
+  BadgeCheck,
+  Video,
+  UserRound,
+  Heart,
+  SlidersHorizontal,
+  ExternalLink,
+  UserPlus,
+  UserMinus,
+  Settings2,
+} from 'lucide-react';
+import './styles.css';
+import './responsive-design-system.css';
+import EditVaultLibrary from './EditVaultLibrary.jsx';
+import './multipage-routing.css';
+import './consumer-arabic-ui.css';
+import CreatorStudio from './CreatorStudio.jsx';
+import ProfileSettings from './ProfileSettings.jsx';
+import MarketplaceSections from './MarketplaceSections.jsx';
+import EditLabRewards from './EditLabRewards.jsx';
+import AccountSettings from './AccountSettings.jsx';
+import PublicCreatorProfile from './PublicCreatorProfile.jsx';
+import CreatorRequests from './CreatorRequests.jsx';
+import CreatorApplication from './CreatorApplication.jsx';
+import TopazAdmin from './TopazAdmin.jsx';
+import './creator-requests.css';
+import './purchase-library-upgrade.css';
+const API_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '');
+
+const categories = ['All edits', 'Anime', 'Cinematic', 'Aesthetic', 'Gaming', 'AMV', 'Other'];
+
+const PREMIUM_SERVICE_OPTIONS = ['CapCut Pro', 'Netflix', 'Spotify Premium', 'YouTube Premium', 'Disney+', 'ChatGPT Plus', 'Canva Pro', 'Adobe Creative Cloud', 'Microsoft 365', 'Telegram Premium', 'Discord Nitro', 'Crunchyroll', 'Shahid VIP', 'OSN+', 'Amazon Prime', 'Other'];
+
+const EDITVAULT_PAGE_PATHS = {
+  home: '/',
+  explore: '/explore',
+  'scene-packs': '/scene-packs',
+  'clip-assembly': '/clip-assembly',
+  editlab: '/editlab',
+  library: '/library',
+  earn: '/earn',
+  accounts: '/accounts',
+  creators: '/creators',
+  requests: '/requests',
+  how: '/how',
+};
+
+function resolveEditVaultPage(pathname) {
+  const cleanPath = String(pathname || '/').replace(/\/+$/, '') || '/';
+  return Object.entries(EDITVAULT_PAGE_PATHS).find(([, route]) => route === cleanPath)?.[0] || 'home';
+}
+
+function App() {
+  const [activePage, setActivePage] = useState(() => resolveEditVaultPage(window.location.pathname));
+  const navigateTo = (page) => {
+    const nextPage = Object.prototype.hasOwnProperty.call(EDITVAULT_PAGE_PATHS, page) ? page : 'home';
+    const nextPath = EDITVAULT_PAGE_PATHS[nextPage];
+    if (window.location.pathname !== nextPath) window.history.pushState({ editVaultPage: nextPage }, '', nextPath);
+    setActivePage(nextPage);
+    setMobileNav(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleAppNavigation = (event) => {
+    const anchor = event.target.closest?.('a[href^="#"]');
+    if (!anchor) return;
+    const sectionToPage = {
+      top: 'home', explore: 'explore', 'scene-packs': 'scene-packs',
+      'clip-assembly': 'clip-assembly', editlab: 'editlab',
+      library: 'library',
+      'earn-points': 'earn', premium: 'accounts', creators: 'creators', requests: 'requests', how: 'how',
+    };
+    const target = (anchor.getAttribute('href') || '').slice(1);
+    const targetPage = sectionToPage[target];
+    if (!targetPage) return;
+    event.preventDefault();
+    navigateTo(targetPage);
+  };
+  useEffect(() => {
+    const syncPageFromUrl = () => {
+      setActivePage(resolveEditVaultPage(window.location.pathname));
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    };
+    window.addEventListener('popstate', syncPageFromUrl);
+    return () => window.removeEventListener('popstate', syncPageFromUrl);
+  }, []);
+
+  const [category, setCategory] = useState('All edits');
+  const [query, setQuery] = useState('');
+  const [points, setPoints] = useState(0);
+  const [edits, setEdits] = useState([]);
+  const [purchased, setPurchased] = useState([]);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [modal, setModal] = useState('');
+  const [mobileNav, setMobileNav] = useState(false);
+  const [previewEdit, setPreviewEdit] = useState(null);
+  const [publicCreatorId, setPublicCreatorId] = useState(null);
+  const [creatorStudioOpen, setCreatorStudioOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [creatorApplicationOpen, setCreatorApplicationOpen] = useState(false);
+  const [topazOpen, setTopazOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [language, setLanguage] = useState(() => localStorage.getItem('editvault_language') || 'en');
+  const tx = (en, ar) => language === 'ar' ? ar : en;
+
+  // Authentication state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Premium accounts
+  const [premiumProducts, setPremiumProducts] = useState([]);
+  const [premiumOrders, setPremiumOrders] = useState([]);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [premiumBuying, setPremiumBuying] = useState('');
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [creatorRequests, setCreatorRequests] = useState([]);
+  const [creatorQueueLoading, setCreatorQueueLoading] = useState(false);
+  const [creatorReviewing, setCreatorReviewing] = useState('');
+  const [creatorMembers, setCreatorMembers] = useState([]);
+  const [creatorMembersLoading, setCreatorMembersLoading] = useState(false);
+  const [creatorMemberEmail, setCreatorMemberEmail] = useState('');
+  const [creatorMemberBusy, setCreatorMemberBusy] = useState('');
+  const [premiumForm, setPremiumForm] = useState({
+    title: '',
+    serviceName: 'CapCut Pro',
+    customServiceName: '',
+    description: '',
+    duration: '30 days',
+    pricePoints: '',
+    imageUrl: '',
+    credentials: '',
+===== MAIN PROFILE AND PAGE RENDER =====
+    setPurchaseLoading(true);
+    setNotice('');
+    try {
+      const response = await fetch(`${API_URL}/api/edits/${edit.id}/purchase`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || data.message || 'Purchase failed.');
+
+      setPurchased((current) => current.includes(edit.id) ? current : [...current, edit.id]);
+      // Fetch the server's balance after purchase; never calculate a trusted balance in the browser.
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        setPoints(Number(walletData.balance || 0));
+      }
+      setNotice(`Unlocked "${edit.title}". It is now in your library.`);
+    } catch (error) {
+      setNotice(error.message || 'Purchase failed. Please try again.');
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-shell" dir={language === 'ar' ? 'rtl' : 'ltr'} data-language={language} data-page={activePage} onClick={handleAppNavigation}>
+      <AccountSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} user={user} language={language} onLanguageChange={setLanguage} onNotice={setNotice} onUserUpdate={(updatedUser) => setUser((current) => ({ ...current, ...updatedUser }))} />
+      <ProfileSettings open={profileOpen} onClose={() => setProfileOpen(false)} user={user} onNotice={setNotice} onUserUpdate={(updatedUser) => setUser((current) => ({ ...current, ...updatedUser }))} />
+      <CreatorApplication open={creatorApplicationOpen} onClose={() => setCreatorApplicationOpen(false)} user={user} onNotice={setNotice} onUserUpdate={(updatedUser) => setUser((current) => { const next = { ...(current || {}), ...updatedUser }; localStorage.setItem('editvault_user', JSON.stringify(next)); return next; })} />
+      <TopazAdmin open={topazOpen} onClose={() => setTopazOpen(false)} user={user} onNotice={setNotice} />
+      <CreatorStudio open={creatorStudioOpen} onClose={() => setCreatorStudioOpen(false)} user={user} onNotice={setNotice} onOpenProfile={() => setProfileOpen(true)} />
+      <header className="topbar">
+        <a className="brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={20} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>{tx('CREATOR MARKETPLACE', 'سوق المبدعين')}</small>
+          </span>
+        </a>
+
+        <nav className={mobileNav ? 'nav open' : 'nav'} aria-label={tx("Marketplace navigation", "التنقل الرئيسي")}>
+          <a className={activePage === 'explore' ? 'nav-active' : ''} href="#explore" onClick={() => setMobileNav(false)}>{tx('Explore', 'استكشف')}</a>
+          <a className={activePage === 'scene-packs' ? 'nav-active' : ''} href="#scene-packs" onClick={() => setMobileNav(false)}>{tx('Scene Packs', 'حزم المشاهد')}</a>
+          <a className={activePage === 'editlab' ? 'nav-active' : ''} href="#editlab" onClick={() => setMobileNav(false)}>EditLab</a>
+          <a className={activePage === 'earn' ? 'nav-active' : ''} href="#earn-points" onClick={() => setMobileNav(false)}>{tx('Earn Points', 'اجمع النقاط')}</a>
+          <a className={activePage === 'accounts' ? 'nav-active' : ''} href="#premium" onClick={() => setMobileNav(false)}>{tx('Accounts', 'الحسابات')}</a>
+          <a className={activePage === 'clip-assembly' ? 'nav-active' : ''} href="#clip-assembly" onClick={() => setMobileNav(false)}>{tx('Clip Assembly', 'تجميع المقاطع')}</a>
+          <a className={activePage === 'creators' ? 'nav-active' : ''} href="#creators" onClick={() => setMobileNav(false)}>{tx('Creators', 'المبدعون')}</a>
+          <a className={activePage === 'how' ? 'nav-active' : ''} href="#how" onClick={() => setMobileNav(false)}>{tx('How it works', 'كيف يعمل الموقع')}</a>
+          <a className={activePage === 'requests' ? 'nav-active' : ''} href="#requests" onClick={() => setMobileNav(false)}>{language === 'ar' ? 'طلبات التعديل' : language === 'es' ? 'Solicitudes' : 'Requests'}</a>
+        
+          <a className={activePage === 'library' ? 'nav-active' : ''} href="#library" onClick={() => setMobileNav(false)}>My Library</a>
+        </nav>
+
+        <div className="top-actions">
+          <button
+            className="points-pill"
+            onClick={() => setModal('points')}
+          >
+            <Coins size={16} />
+            <b>{points}</b>
+            <span>{tx('PTS', 'نقطة')}</span>
+          </button>
+
+          <button className="login-btn settings-access-btn" type="button" onClick={() => setSettingsOpen(true)} title={tx("Account settings", "إعدادات الحساب")}>
+            <Settings2 size={14} /> <span>{language === 'ar' ? 'الإعدادات' : language === 'es' ? 'Ajustes' : 'Settings'}</span>
+          </button>
+
+          {user ? (
+            <>
+              <button className="account-identity" type="button" onClick={() => setProfileOpen(true)} title={user.email || 'Open profile'}>
+                <span className="account-avatar">
+                  {user.avatar_data_url ? <img src={user.avatar_data_url} alt="" /> : <span>{String(user.displayName || user.display_name || user.email || 'U').trim().charAt(0).toUpperCase()}</span>}
+                </span>
+                <span className="account-identity-copy">
+                  <strong>{user.displayName || user.display_name || user.email}</strong>
+                  {user.role === 'admin' ? <small className="role-pill role-admin">{tx('Administrator', 'مدير')}</small> : user.role === 'creator' ? <small className="role-pill role-creator"><BadgeCheck size={11} /> {tx('Creator', 'مبدع')}</small> : <small className="role-pill">{tx('Member', 'عضو')}</small>}
+                </span>
+              </button>
+
+              {canAccessCreatorStudio ? (
+                <button className="creator-access-btn" onClick={() => setCreatorStudioOpen(true)}>{tx('Creator Studio', 'استوديو المبدع')}</button>
+              ) : (
+                <button className="creator-access-btn" onClick={() => setCreatorApplicationOpen(true)}>{tx('Apply as creator', 'قدّم كصانع محتوى')}</button>
+              )}
+              {user.role === 'admin' && <button className="admin-access-btn" onClick={() => document.getElementById('creator-admin-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{tx('Admin', 'الإدارة')}</button>}
+              <button className="login-btn profile-access-btn" onClick={() => setProfileOpen(true)}>{tx('Profile', 'الملف الشخصي')}</button>
+              <button className="login-btn" onClick={logout}>{tx('Log out', 'تسجيل الخروج')}</button>
+            </>
+          ) : (
+            <>
+              <button
+                className="login-btn"
+                onClick={() => openAuth('login')}
+              >
+                {tx('Log in', 'تسجيل الدخول')}
+              </button>
+
+              <button
+                className="signup-btn"
+                onClick={() => openAuth('signup')}
+              >
+                {tx('Join free', 'انضم مجانًا')} <ArrowUpRight size={15} />
+              </button>
+===== DATABASE USERS SCHEMA =====
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user','creator','admin')),
+  tiktok_url TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'not_requested' CHECK (verification_status IN ('not_requested','pending','verified','rejected')),
+  verification_note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS wallets (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS point_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL CHECK (amount <> 0),
+  reason TEXT NOT NULL CHECK (reason IN ('purchase','sale','ad_reward','admin_adjustment','refund','referral_reward','editlab_processing')),
+  reference_id UUID,
+  idempotency_key TEXT UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS edits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT 'Other',
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  preview_path TEXT,
+  original_path TEXT NOT NULL,
+  original_filename TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft','published','removed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS purchases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  edit_id UUID NOT NULL REFERENCES edits(id) ON DELETE CASCADE,
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (buyer_id, edit_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_edits_published_created ON edits(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_edits_creator ON edits(creator_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_user_created ON point_ledger(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_purchases_buyer ON purchases(buyer_id, created_at DESC);
+
+-- Premium accounts managed by administrators only.
+CREATE TABLE IF NOT EXISTS premium_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  service_name TEXT NOT NULL,
+  duration TEXT NOT NULL DEFAULT '',
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  image_url TEXT,
+  status TEXT NOT NULL DEFAULT 'available'
+    CHECK (status IN ('available', 'hidden', 'sold_out')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Orders are delivered manually by the administrator.
+CREATE TABLE IF NOT EXISTS premium_account_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id UUID NOT NULL REFERENCES users(id),
+  account_id UUID NOT NULL REFERENCES premium_accounts(id),
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'completed', 'rejected')),
+  admin_note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_premium_accounts_status
+  ON premium_accounts(status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_premium_orders_buyer
+  ON premium_account_orders(buyer_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_premium_orders_status
+  ON premium_account_orders(status, created_at DESC);
+

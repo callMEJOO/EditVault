@@ -1,0 +1,70 @@
+/* Scene-pack upload/link choices; responsive grid layout is inherited from the marketplace form. */
+.evx-pack-source-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  min-width: 0;
+}
+.evx-pack-source-toggle button {
+  flex: 1 1 190px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 11px;
+  background: rgba(255,255,255,.025);
+  color: #cfc9d8;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, color .18s ease;
+}
+.evx-pack-source-toggle button.is-active {
+  border-color: rgba(200,255,69,.52);
+  background: rgba(200,255,69,.075);
+  color: var(--evx-lime, #c8ff45);
+}
+.evx-pack-source-toggle button:focus-visible,
+.evx-pack-optional-fields summary:focus-visible {
+  outline: 2px solid var(--evx-lime, #c8ff45);
+  outline-offset: 3px;
+}
+.evx-pack-optional-fields {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,.095);
+  border-radius: 12px;
+  background: rgba(255,255,255,.02);
+}
+.evx-pack-optional-fields summary {
+  cursor: pointer;
+  color: #d4cfde;
+  font-size: 11px;
+  font-weight: 750;
+}
+.evx-pack-optional-fields[open] {
+  display: grid;
+  gap: 12px;
+}
+.evx-pack-optional-fields[open] summary { margin-bottom: 2px; }
+.evx-pack-optional-fields label { min-width: 0; }
+@media (max-width: 640px) {
+  .evx-pack-source-toggle { flex-direction: column; }
+  .evx-pack-source-toggle button { flex-basis: auto; width: 100%; }
+  .evx-pack-optional-fields { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .evx-pack-source-toggle button { transition: none; }
+}
+
+
+/* Required cover upload for community scene-pack publishing. */
+.evx-pack-form input[type="file"] { width: 100%; min-width: 0; padding: 10px; border: 1px dashed rgba(255,255,255,.2); border-radius: 10px; background: rgba(255,255,255,.025); color: #dedbe6; font: inherit; font-size: 12px; }
+.evx-pack-form input[type="file"]::file-selector-button { min-height: 33px; margin-right: 10px; padding: 6px 10px; border: 0; border-radius: 7px; background: var(--evx-lime, #c8ff45); color: #161616; font: inherit; font-weight: 750; cursor: pointer; }
+.evx-admin-heading p { margin-top: 7px; color: #aaa5b4; font-size: 12px; line-height: 1.6; }
+.evx-admin-pack-row small { overflow-wrap: anywhere; }
+@media (max-width: 640px) { .evx-pack-form input[type="file"]::file-selector-button { display: block; width: 100%; margin: 0 0 8px; } }

@@ -1,0 +1,95 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user','creator','admin')),
+  tiktok_url TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'not_requested' CHECK (verification_status IN ('not_requested','pending','verified','rejected')),
+  verification_note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS wallets (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS point_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL CHECK (amount <> 0),
+  reason TEXT NOT NULL CHECK (reason IN ('purchase','sale','ad_reward','admin_adjustment','refund')),
+  reference_id UUID,
+  idempotency_key TEXT UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS edits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT 'Other',
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  preview_path TEXT,
+  original_path TEXT NOT NULL,
+  original_filename TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft','published','removed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS purchases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  edit_id UUID NOT NULL REFERENCES edits(id) ON DELETE CASCADE,
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (buyer_id, edit_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_edits_published_created ON edits(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_edits_creator ON edits(creator_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_user_created ON point_ledger(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_purchases_buyer ON purchases(buyer_id, created_at DESC);
+
+-- Premium accounts managed by administrators only.
+CREATE TABLE IF NOT EXISTS premium_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  service_name TEXT NOT NULL,
+  duration TEXT NOT NULL DEFAULT '',
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  image_url TEXT,
+  status TEXT NOT NULL DEFAULT 'available'
+    CHECK (status IN ('available', 'hidden', 'sold_out')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Orders are delivered manually by the administrator.
+CREATE TABLE IF NOT EXISTS premium_account_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id UUID NOT NULL REFERENCES users(id),
+  account_id UUID NOT NULL REFERENCES premium_accounts(id),
+  price_points INTEGER NOT NULL CHECK (price_points > 0),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'completed', 'rejected')),
+  admin_note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_premium_accounts_status
+  ON premium_accounts(status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_premium_orders_buyer
+  ON premium_account_orders(buyer_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_premium_orders_status
+  ON premium_account_orders(status, created_at DESC);
+

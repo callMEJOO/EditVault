@@ -1,0 +1,21 @@
+/* EditVault Scene Packs — Community V1 */
+.evsp-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 24px;padding:6px;border:1px solid #ffffff16;border-radius:15px;background:#101015;max-width:570px}
+.evsp-tabs button{min-height:47px;flex:1 1 205px;border:1px solid transparent;border-radius:10px;background:transparent;color:#aaa6b6;display:inline-flex;align-items:center;justify-content:center;gap:10px;font-size:12px;font-weight:800;transition:background .18s,border-color .18s,color .18s}
+.evsp-tabs button.is-active{background:#c6ff4d10;border-color:#c6ff4d6e;color:#c6ff4d}
+.evsp-tabs button:focus-visible,.evsp-admin-actions button:focus-visible{outline:2px solid #c6ff4d;outline-offset:2px}
+.evsp-tab-badge{display:inline-flex;align-items:center;gap:3px;border-radius:999px;background:#c6ff4d14;padding:4px 7px;color:#c6ff4d;font:10px 'DM Mono',monospace}
+.evsp-rewards{display:flex;align-items:flex-start;gap:15px;padding:20px;border:1px solid #c6ff4d38;border-radius:16px;background:radial-gradient(ellipse at top right,#c6ff4d13,transparent 60%),#191c18;margin-bottom:16px}
+.evsp-reward-icon{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;background:#c6ff4d16;border-radius:13px;color:#c6ff4d}
+.evsp-rewards strong{color:#f7f7f3;font-size:16px}.evsp-rewards p{margin:7px 0;color:#e3e5dc;font-size:12px;line-height:1.8}.evsp-rewards small{color:#a8af9d;font-size:11px;line-height:1.7}
+.evsp-quotas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:16px 0 22px}
+.evsp-quotas>div{display:grid;gap:9px;padding:17px;border:1px solid #ffffff18;border-radius:13px;background:#18181d}
+.evsp-quotas small{font-size:11px;color:#afaab9}.evsp-quotas strong{font:22px 'DM Mono',monospace;color:#c6ff4d}.evsp-quotas em{font-style:normal;color:#777585;font-size:12px}
+.evsp-policy{display:flex;gap:8px;align-items:flex-start;margin:0;padding:11px;color:#b9b5c2;line-height:1.75;font-size:11px;background:#ffffff07;border-radius:10px}.evsp-policy svg{flex-shrink:0;color:#c6ff4d}
+.evsp-alert{padding:12px 15px;border:1px solid #efc57645;background:#efc5760b;color:#efc576;border-radius:10px;font-size:12px}
+.evsp-my-submissions{margin:20px 0;padding:22px;border:1px solid #ffffff15;border-radius:15px;background:#16161c}.evsp-my-submissions h3{font-size:16px;margin:0 0 14px}.evsp-my-submissions>p{font-size:12px;color:#a7a3b1}
+.evsp-my-list{display:grid;gap:8px}.evsp-my-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:11px 13px;border:1px solid #ffffff10;border-radius:9px;background:#101015}.evsp-my-row strong{flex:1;min-width:110px;overflow-wrap:anywhere;font-size:12px}.evsp-my-row small{color:#c6ff4d;font-weight:700;font-size:11px}
+.evsp-status{font-size:10px;font-weight:750;border-radius:999px;padding:6px 9px;border:1px solid #ffffff28;color:#ddd}.evsp-pending{border-color:#f9c74f54;color:#f9d27e}.evsp-available{border-color:#c6ff4d50;color:#c6ff4d}.evsp-rejected{border-color:#f8717150;color:#fca5a5}
+.evsp-admin-actions{display:flex;flex-wrap:wrap;gap:8px}.evsp-admin-actions button{padding:8px 13px;min-height:38px;border:1px solid #c6ff4d55;border-radius:8px;background:#c6ff4d16;color:#c6ff4d;font-size:11px;font-weight:800}.evsp-admin-actions button.is-reject{border-color:#f871715a;background:#f8717114;color:#fca5a5}
+@media(max-width:680px){.evsp-tabs{max-width:none}.evsp-tabs button{flex-basis:130px;font-size:11px}.evsp-quotas{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.evsp-quotas>div{padding:11px 9px}.evsp-quotas small{font-size:9px}.evsp-quotas strong{font-size:17px}.evsp-quotas em{font-size:10px}.evsp-rewards{padding:14px;gap:10px}.evsp-reward-icon{width:35px;height:35px;flex-basis:35px}.evsp-rewards p{font-size:11px}.evsp-my-submissions{padding:14px}}
+@media(max-width:360px){.evsp-quotas{grid-template-columns:1fr}.evsp-quotas>div{display:flex;align-items:center;justify-content:space-between}}
+@media(prefers-reduced-motion:reduce){.evsp-tabs button{transition:none}}

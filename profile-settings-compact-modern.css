@@ -1,0 +1,57 @@
+/* EditVault compact profile settings + modern cover preview */
+.profile-settings-backdrop{padding:10px!important;align-items:center!important}
+.profile-settings-modal{width:min(680px,100%)!important;max-height:calc(100dvh - 20px)!important;padding:20px!important;border-radius:22px!important}
+.profile-settings-header{margin-bottom:14px!important;gap:11px!important}
+.profile-settings-header p{margin-top:5px!important}
+.profile-settings-form{gap:11px!important}
+.profile-settings-form>label{gap:5px!important}
+.profile-settings-form input:not([type=file]),.profile-settings-form textarea,.profile-settings-form select{padding:10px 12px!important;border-radius:11px!important;font-size:13px!important}
+.profile-settings-form textarea{min-height:78px!important;max-height:110px!important}
+.profile-photo-card{padding:12px!important;gap:13px!important;border-radius:15px!important}
+.profile-photo-preview{width:70px!important;height:70px!important;flex-basis:70px!important}
+.profile-photo-main>strong{font-size:13px!important}
+.profile-photo-main>small{font-size:10px!important}
+.ev-profile-link-card{padding:12px!important;border-radius:14px!important}
+.ev-profile-link-url{margin:8px 0!important;padding:8px 10px!important;font-size:11px!important}
+.ev-profile-link-actions{gap:7px!important}
+.profile-settings-actions{gap:8px!important;padding-top:0!important}
+.profile-settings-actions button{min-height:38px!important}
+.ev-profile-cover-preview{
+ display:block!important;
+ width:100%!important;
+ max-height:118px!important;
+ aspect-ratio:3.4/1!important;
+ object-fit:cover!important;
+ object-position:center 42%!important;
+ border-radius:13px!important;
+ border:1px solid rgba(125,211,252,.28)!important;
+ box-shadow:0 8px 24px rgba(0,0,0,.22)!important;
+ margin-top:10px!important;
+}
+.profile-settings-form .profile-photo-card[aria-label="Profile cover"]{
+ position:relative!important;
+ overflow:hidden!important;
+ background:
+   radial-gradient(ellipse at 12% 15%,rgba(34,211,238,.17),transparent 42%),
+   radial-gradient(ellipse at 85% 85%,rgba(139,92,246,.22),transparent 48%),
+   linear-gradient(120deg,#111827,#172554 50%,#111827)!important;
+}
+.profile-settings-form .profile-photo-card[aria-label="Profile cover"] .profile-photo-main>small{max-width:420px!important}
+.profile-settings-form .profile-photo-card[aria-label="Profile cover"] .profile-photo-actions{margin-top:5px!important}
+@media(max-width:600px){
+ .profile-settings-backdrop{padding:6px!important}
+ .profile-settings-modal{max-height:calc(100dvh - 12px)!important;padding:13px!important;border-radius:17px!important}
+ .profile-settings-header{grid-template-columns:34px minmax(0,1fr) 32px!important;gap:8px!important;margin-bottom:12px!important}
+ .profile-settings-title-icon{width:34px!important;height:34px!important;border-radius:10px!important}
+ .profile-settings-header h2{font-size:23px!important}
+ .profile-settings-header p{font-size:11px!important}
+ .profile-settings-close{width:32px!important;height:32px!important}
+ .profile-settings-form{gap:9px!important}
+ .profile-photo-card{padding:10px!important;gap:10px!important}
+ .profile-photo-preview{width:58px!important;height:58px!important;flex-basis:58px!important}
+ .profile-settings-form textarea{min-height:66px!important;max-height:90px!important}
+ .ev-profile-link-card{padding:10px!important}
+ .ev-profile-cover-preview{max-height:84px!important}
+ .profile-settings-actions{flex-direction:row!important;flex-wrap:wrap!important}
+ .profile-settings-actions>*{flex:1 1 120px!important;width:auto!important}
+}

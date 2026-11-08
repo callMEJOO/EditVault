@@ -1,0 +1,21 @@
+/* EDITVAULT_SMART_CC_LOCAL_V1 — local, keyless, mobile-friendly analysis */
+.evlr-root .evlr-smart-cc{position:relative;display:grid;gap:16px;padding:clamp(16px,3vw,25px);background:radial-gradient(ellipse at 100% 0%,rgba(198,255,77,.09),transparent 55%),#11151b;border:1px solid rgba(198,255,77,.20);border-radius:16px;margin:17px 0}
+.evlr-root .evlr-smart-top{display:flex;align-items:flex-start;gap:13px}
+.evlr-root .evlr-smart-icon{flex-shrink:0;display:grid;place-items:center;width:43px;height:43px;border-radius:13px;color:#c6ff4d;background:rgba(198,255,77,.09);border:1px solid rgba(198,255,77,.25)}
+.evlr-root .evlr-smart-top h3{font-size:clamp(17px,2.6vw,22px);margin:2px 0 6px;color:#f7f9f0}
+.evlr-root .evlr-smart-top p,.evlr-root .evlr-smart-disclaimer{color:#a6adba;line-height:1.7;font-size:12px;margin:0}
+.evlr-root .evlr-smart-badge{width:fit-content;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(198,255,77,.25);background:rgba(198,255,77,.075);color:#d0ff70;font:700 10px Manrope,system-ui,sans-serif}
+.evlr-root .evlr-smart-button{border:0;border-radius:12px;background:#c6ff4d;color:#181e0e;min-height:47px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:12px;font-weight:850;cursor:pointer;transition:transform .18s,filter .18s}
+.evlr-root .evlr-smart-button:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.07)}
+.evlr-root .evlr-smart-button:disabled{opacity:.5;cursor:not-allowed}
+.evlr-root .evlr-smart-output{padding:16px;border:1px solid rgba(198,255,77,.27);border-radius:13px;background:rgba(198,255,77,.035);display:grid;gap:12px}
+.evlr-root .evlr-smart-output h4{margin:2px 0 5px;font-size:17px;color:#e7ffad}
+.evlr-root .evlr-smart-output p{color:#c0c7ce;font-size:12px;line-height:1.65;margin:0}
+.evlr-root .evlr-smart-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.evlr-root .evlr-smart-metrics div{display:grid;gap:5px;background:#1c2229;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:11px;min-width:0}
+.evlr-root .evlr-smart-metrics span{font-size:10px;color:#9ca6b6}
+.evlr-root .evlr-smart-metrics strong{font:750 16px 'DM Mono',monospace;color:#f7f8f1}
+.evlr-root .evlr-smart-error{border:1px solid rgba(255,125,125,.3);background:rgba(255,125,125,.07);border-radius:10px;color:#ffc2c2;padding:12px;font-size:12px}
+.evlr-root .evlr-smart-disclaimer{font-size:10px;color:#8e98a8}
+@media(max-width:620px){.evlr-root .evlr-smart-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.evlr-root .evlr-smart-metrics div{padding:9px}.evlr-root .evlr-smart-metrics strong{font-size:14px}.evlr-root .evlr-smart-button{width:100%}.evlr-root .evlr-smart-top{gap:10px}}
+@media(prefers-reduced-motion:reduce){.evlr-root .evlr-smart-button{transition:none}}

@@ -1,0 +1,1156 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  Search,
+  Coins,
+  ShieldCheck,
+  Play,
+  Download,
+  Sparkles,
+  Clapperboard,
+  Menu,
+  X,
+  ArrowUpRight,
+  BadgeCheck,
+  Video,
+  UserRound,
+  Heart,
+  SlidersHorizontal,
+} from 'lucide-react';
+import './styles.css';
+
+const API_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '');
+
+const mockEdits = [
+  {
+    id: 1,
+    title: 'NEON AFTER HOURS',
+    creator: 'kairo.fx',
+    verified: true,
+    category: 'Anime',
+    price: 80,
+    likes: '2.4k',
+    tone: 'violet',
+    tag: 'TRENDING',
+    length: '00:18',
+  },
+  {
+    id: 2,
+    title: 'MIDNIGHT RUN',
+    creator: 'nox.visuals',
+    verified: true,
+    category: 'Cinematic',
+    price: 120,
+    likes: '1.8k',
+    tone: 'blue',
+    tag: 'EDITOR PICK',
+    length: '00:24',
+  },
+  {
+    id: 3,
+    title: 'AFTER THE RAIN',
+    creator: 'mira.mp4',
+    verified: false,
+    category: 'Aesthetic',
+    price: 60,
+    likes: '986',
+    tone: 'pink',
+    tag: 'NEW DROP',
+    length: '00:15',
+  },
+  {
+    id: 4,
+    title: 'LIMITLESS / AMV',
+    creator: 'zenith.edits',
+    verified: true,
+    category: 'Anime',
+    price: 150,
+    likes: '3.1k',
+    tone: 'orange',
+    tag: 'TOP SELLER',
+    length: '00:21',
+  },
+  {
+    id: 5,
+    title: 'CITY IN MOTION',
+    creator: 'framebykai',
+    verified: true,
+    category: 'Cinematic',
+    price: 100,
+    likes: '1.2k',
+    tone: 'green',
+    tag: 'POPULAR',
+    length: '00:19',
+  },
+  {
+    id: 6,
+    title: 'SOFT FOCUS',
+    creator: 'mira.mp4',
+    verified: false,
+    category: 'Aesthetic',
+    price: 50,
+    likes: '740',
+    tone: 'lavender',
+    tag: 'FRESH',
+    length: '00:12',
+  },
+];
+
+const categories = ['All edits', 'Anime', 'Cinematic', 'Aesthetic'];
+
+function App() {
+  const [category, setCategory] = useState('All edits');
+  const [query, setQuery] = useState('');
+  const [points, setPoints] = useState(0);
+  const [edits, setEdits] = useState([]);
+  const [purchased, setPurchased] = useState([]);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [modal, setModal] = useState('');
+  const [mobileNav, setMobileNav] = useState(false);
+  const [previewEdit, setPreviewEdit] = useState(null);
+
+  // Authentication state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Restore the saved session when the page loads.
+  useEffect(() => {
+    const token = localStorage.getItem('editvault_token');
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    const restoreSession = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          localStorage.removeItem('editvault_token');
+          localStorage.removeItem('editvault_user');
+
+          if (!cancelled) setUser(null);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setUser(data.user || data);
+        }
+      } catch (error) {
+        console.error('Session restore failed:', error);
+      }
+    };
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load published edits from the backend and keep wallet/library in sync with the account.
+  useEffect(() => {
+    let cancelled = false;
+    const loadEdits = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/edits`);
+        if (!response.ok) throw new Error('Could not load edits.');
+        const data = await response.json();
+        const rows = Array.isArray(data.edits) ? data.edits : [];
+        if (!cancelled) {
+          setEdits(rows.map((row, index) => ({
+            ...row,
+            id: row.id,
+            previewUrl: row.has_preview
+              ? `${API_URL}/api/edits/${row.id}/preview`
+              : null,
+            creator: row.creator_name || 'creator',
+            verified: row.verification_status === 'verified',
+            price: Number(row.price_points || 0),
+            likes: '—',
+            tone: ['violet', 'blue', 'pink', 'orange', 'green', 'lavender'][index % 6],
+            tag: 'ORIGINAL EDIT',
+            length: '--:--',
+          })));
+        }
+      } catch (error) {
+        console.error('Loading edits failed:', error);
+        if (!cancelled) setNotice(error.message || 'Could not load edits from the server.');
+      }
+    };
+    loadEdits();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAccountData = async () => {
+      const token = localStorage.getItem('editvault_token');
+      if (!user || !token) {
+        setPoints(0);
+        setPurchased([]);
+        return;
+      }
+      const headers = { Authorization: `Bearer ${token}` };
+      try {
+        const [walletResponse, libraryResponse] = await Promise.all([
+          fetch(`${API_URL}/api/wallet`, { headers }),
+          fetch(`${API_URL}/api/edits/mine/library`, { headers }),
+        ]);
+        if (!walletResponse.ok) throw new Error('Could not load your wallet.');
+        if (!libraryResponse.ok) throw new Error('Could not load your library.');
+        const walletData = await walletResponse.json();
+        const libraryData = await libraryResponse.json();
+        if (!cancelled) {
+          setPoints(Number(walletData.balance || 0));
+          setPurchased((libraryData.library || []).map((item) => item.id));
+        }
+      } catch (error) {
+        console.error('Loading wallet/library failed:', error);
+        if (!cancelled) setNotice(error.message || 'Could not load your account data.');
+      }
+    };
+    loadAccountData();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const filtered = useMemo(
+    () =>
+      edits.filter(
+        (edit) =>
+          (category === 'All edits' || edit.category === category) &&
+          `${edit.title} ${edit.creator} ${edit.category}`
+            .toLowerCase()
+            .includes(query.toLowerCase())
+      ),
+    [category, query]
+  );
+
+  const resetAuthForm = () => {
+    setEmail('');
+    setPassword('');
+    setDisplayName('');
+    setAuthLoading(false);
+  };
+
+  const openAuth = (type) => {
+    resetAuthForm();
+    setNotice('');
+    setModal(type);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('editvault_token');
+    localStorage.removeItem('editvault_user');
+
+    setUser(null);
+    resetAuthForm();
+    setModal('');
+
+    setNotice('You have been logged out successfully.');
+  };
+
+  // Real signup/login API integration.
+  const submitAuth = async (event) => {
+    event.preventDefault();
+
+    if (authLoading) return;
+
+    const isSignup = modal === 'signup';
+
+    if (isSignup && !displayName.trim()) {
+      setNotice('Please enter your display name.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setNotice('Password must be at least 8 characters.');
+      return;
+    }
+
+    setAuthLoading(true);
+    setNotice('');
+
+    try {
+      const endpoint = isSignup
+        ? '/api/auth/signup'
+        : '/api/auth/login';
+
+      const payload = isSignup
+        ? {
+            displayName: displayName.trim(),
+            email: email.trim(),
+            password,
+          }
+        : {
+            email: email.trim(),
+            password,
+          };
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            (response.status === 409
+              ? 'An account with this email already exists.'
+              : 'Authentication failed. Please try again.')
+        );
+      }
+
+      if (!data.token || !data.user) {
+        throw new Error(
+          'The server response is missing the account or authentication token.'
+        );
+      }
+
+      // Save the real authentication session.
+      localStorage.setItem('editvault_token', data.token);
+      localStorage.setItem('editvault_user', JSON.stringify(data.user));
+
+      setUser(data.user);
+      setModal('');
+      resetAuthForm();
+
+      setNotice(
+        isSignup
+          ? 'Your EditVault account was created successfully!'
+          : 'Welcome back! You are now logged in.'
+      );
+    } catch (error) {
+      console.error('Authentication error:', error);
+
+      setNotice(
+        error.message ||
+          'Could not connect to the server. Make sure the backend is running.'
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const buy = async (edit) => {
+    if (!user) {
+      setNotice('Please log in before unlocking an edit.');
+      openAuth('login');
+      return;
+    }
+    if (purchased.includes(edit.id)) {
+      setNotice(`You already own "${edit.title}".`);
+      return;
+    }
+    if (purchaseLoading) return;
+
+    const token = localStorage.getItem('editvault_token');
+    if (!token) {
+      setNotice('Your session expired. Please log in again.');
+      logout();
+      return;
+    }
+
+    setPurchaseLoading(true);
+    setNotice('');
+    try {
+      const response = await fetch(`${API_URL}/api/edits/${edit.id}/purchase`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || data.message || 'Purchase failed.');
+
+      setPurchased((current) => current.includes(edit.id) ? current : [...current, edit.id]);
+      // Fetch the server's balance after purchase; never calculate a trusted balance in the browser.
+      const walletResponse = await fetch(`${API_URL}/api/wallet`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (walletResponse.ok) {
+        const walletData = await walletResponse.json();
+        setPoints(Number(walletData.balance || 0));
+      }
+      setNotice(`Unlocked "${edit.title}". It is now in your library.`);
+    } catch (error) {
+      setNotice(error.message || 'Purchase failed. Please try again.');
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <a className="brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={20} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>CREATOR MARKETPLACE</small>
+          </span>
+        </a>
+
+        <nav className={mobileNav ? 'nav open' : 'nav'}>
+          <a
+            className="nav-active"
+            href="#explore"
+            onClick={() => setMobileNav(false)}
+          >
+            Explore
+          </a>
+
+          <a href="#creators" onClick={() => setMobileNav(false)}>
+            Creators
+          </a>
+
+          <a href="#how" onClick={() => setMobileNav(false)}>
+            How it works
+          </a>
+        </nav>
+
+        <div className="top-actions">
+          <button
+            className="points-pill"
+            onClick={() => setModal('points')}
+          >
+            <Coins size={16} />
+            <b>{points}</b>
+            <span>PTS</span>
+          </button>
+
+          {user ? (
+            <>
+              <span
+                className="creator-name"
+                title={user.email || ''}
+              >
+                {user.displayName || user.display_name || user.email}
+              </span>
+
+              <button className="login-btn" onClick={logout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="login-btn"
+                onClick={() => openAuth('login')}
+              >
+                Log in
+              </button>
+
+              <button
+                className="signup-btn"
+                onClick={() => openAuth('signup')}
+              >
+                Join free <ArrowUpRight size={15} />
+              </button>
+            </>
+          )}
+
+          <button
+            className="mobile-menu"
+            onClick={() => setMobileNav((value) => !value)}
+            aria-label="Toggle menu"
+          >
+            {mobileNav ? <X /> : <Menu />}
+          </button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section className="hero">
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <span className="live-dot" />
+              MADE BY CREATORS. OWNED BY YOU.
+            </div>
+
+            <h1>
+              Your next edit.
+              <br />
+              <span>One click away.</span>
+            </h1>
+
+            <p>
+              Discover original edits from independent creators.
+              Support the talent, unlock the full-quality video,
+              and make it yours.
+            </p>
+
+            <div className="hero-buttons">
+              <a className="primary-cta" href="#explore">
+                Explore edits <ArrowUpRight size={17} />
+              </a>
+
+              <button
+                className="secondary-cta"
+                onClick={() =>
+                  user ? setNotice('Creator tools are coming soon.') : openAuth('signup')
+                }
+              >
+                <Video size={16} /> I'm a creator
+              </button>
+            </div>
+
+            <div className="hero-proof">
+              <div className="avatar-stack">
+                <i>k</i>
+                <i>n</i>
+                <i>m</i>
+                <i>z</i>
+              </div>
+
+              <span>
+                <b>Creator-first</b>
+                <br />
+                A marketplace built on credit, not reposts.
+              </span>
+            </div>
+          </div>
+
+          <div className="hero-art">
+            <div className="art-glow" />
+
+            <div className="poster poster-back">
+              <span className="poster-mini">EV / 002</span>
+              <div className="poster-lines">
+                NO
+                <br />
+                LIMITS
+              </div>
+              <span className="poster-bottom">
+                ORIGINAL CREATOR EDIT
+              </span>
+            </div>
+
+            <div className="poster poster-front">
+              <div className="poster-top">
+                <span>FEATURED DROP</span>
+                <span className="poster-dot" />
+              </div>
+
+              <div className="poster-orb" />
+
+              <div className="poster-title">
+                AFTER
+                <br />
+                <em>DARK</em>
+              </div>
+
+              <div className="poster-foot">
+                <span>
+                  kairo.fx <BadgeCheck size={12} />
+                </span>
+                <span>00:18 / 4K</span>
+              </div>
+
+              <div className="play-float">
+                <Play size={17} fill="currentColor" />
+              </div>
+            </div>
+
+            <div className="floating-chip chip-top">
+              <Sparkles size={15} /> Creator verified
+            </div>
+
+            <div className="floating-chip chip-bottom">
+              <Coins size={16} />
+              <span>
+                <b>80 points</b>
+                <small>Unlock original</small>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="stats-row">
+          <div>
+            <strong>01</strong>
+            <span>Find your style</span>
+          </div>
+
+          <div>
+            <strong>02</strong>
+            <span>Earn points from rewarded ads</span>
+          </div>
+
+          <div>
+            <strong>03</strong>
+            <span>Unlock the original</span>
+          </div>
+
+          <div className="stats-note">
+            <ShieldCheck size={18} />
+            <span>
+              Credit the creator.
+              <br />
+              <b>Always.</b>
+            </span>
+          </div>
+        </section>
+
+        <section className="market-section" id="explore">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">THE DROP ZONE / 001</div>
+              <h2>
+                Find your <span>next favorite.</span>
+              </h2>
+              <p>Handpicked edits. Real creators. Original quality.</p>
+            </div>
+
+            <button
+              className="view-all"
+              onClick={() => {
+                setCategory('All edits');
+                setQuery('');
+              }}
+            >
+              View all edits <ArrowUpRight size={15} />
+            </button>
+          </div>
+
+          <div className="market-controls">
+            <div className="category-tabs">
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setCategory(item)}
+                  className={
+                    category === item
+                      ? 'category-tab selected'
+                      : 'category-tab'
+                  }
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <label className="search-box">
+              <Search size={17} />
+
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search edits or creators..."
+              />
+
+              <SlidersHorizontal
+                size={16}
+                className="search-filter"
+              />
+            </label>
+          </div>
+
+          <div className="edit-grid">
+            {filtered.map((edit, index) => (
+              <article className="edit-card" key={edit.id}>
+                <div className={`edit-cover cover-${edit.tone}`}>
+                  <div className="cover-noise" />
+
+                  <div className="cover-top">
+                    <span>{edit.tag}</span>
+
+                    <button
+                      aria-label="Save edit"
+                      onClick={() => {
+                        if (!user) {
+                          setNotice('Sign in to save edits to your favorites.');
+                          openAuth('login');
+                        } else {
+                          setNotice('Favorites are coming soon.');
+                        }
+                      }}
+                    >
+                      <Heart size={16} />
+                    </button>
+                  </div>
+
+                  <div className="cover-art">
+                    <span className="cover-index">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+
+                    <div className="cover-graphic">
+                      {edit.category === 'Anime'
+                        ? '影'
+                        : edit.category === 'Cinematic'
+                        ? 'FRAME'
+                        : 'S O F T'}
+                    </div>
+
+                    <span className="cover-title">
+                      {edit.title}
+                    </span>
+                  </div>
+
+                  <span className="duration">{edit.length}</span>
+
+                  <button
+                    className="preview-play"
+                    aria-label={`Preview ${edit.title}`}
+                    onClick={() => {
+                      if (edit.previewUrl) {
+                        setPreviewEdit(edit);
+                      } else {
+                        setNotice('Preview is not available for this edit yet.');
+                      }
+                    }}
+                  >
+                    <Play size={16} fill="currentColor" />
+                  </button>
+                </div>
+
+                <div className="card-body">
+                  <div className="creator-line">
+                    <span className="creator-avatar">
+                      {edit.creator[0]}
+                    </span>
+
+                    <span className="creator-name">
+                      @{edit.creator}
+                    </span>
+
+                    {edit.verified && (
+                      <span
+                        className="verified"
+                        title="Verified creator"
+                      >
+                        <BadgeCheck size={15} />
+                      </span>
+                    )}
+
+                    <span className="likes">
+                      <Heart size={12} />
+                      {edit.likes}
+                    </span>
+                  </div>
+
+                  <h3>{edit.title}</h3>
+
+                  <div className="card-footer">
+                    <span className="price">
+                      <Coins size={16} />
+                      <b>{edit.price}</b>
+                      <small>PTS</small>
+                    </span>
+
+                    <button
+                      className={
+                        purchased.includes(edit.id)
+                          ? 'buy-btn owned'
+                          : 'buy-btn'
+                      }
+                      onClick={() => buy(edit)}
+                    >
+                      {purchased.includes(edit.id) ? (
+                        <>
+                          <Download size={14} /> Owned
+                        </>
+                      ) : purchaseLoading ? (
+                        'Processing...'
+                      ) : (
+                        <>
+                          Unlock <ArrowUpRight size={14} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="empty-state">
+              No edits match that search. Try another creator or category.
+            </div>
+          )}
+        </section>
+
+        <section className="creator-banner" id="creators">
+          <div className="creator-banner-icon">
+            <Clapperboard size={28} />
+          </div>
+
+          <div>
+            <div className="eyebrow">
+              FOR THE ONES BEHIND THE EDIT
+            </div>
+
+            <h2>
+              Your work deserves <span>more than a repost.</span>
+            </h2>
+
+            <p>
+              Publish your edits, build a verified profile, and earn
+              points every time someone unlocks your work.
+            </p>
+          </div>
+
+          <button
+            className="primary-cta"
+            onClick={() =>
+              user
+                ? setNotice('Creator tools are coming soon.')
+                : openAuth('signup')
+            }
+          >
+            Become a creator <ArrowUpRight size={17} />
+          </button>
+        </section>
+
+        <section className="how-section" id="how">
+          <div className="eyebrow">SIMPLE BY DESIGN</div>
+
+          <h2>
+            Good edits. <span>Good credit.</span>
+          </h2>
+
+          <div className="how-grid">
+            <div>
+              <span className="step-no">01</span>
+              <Search />
+              <h3>Discover</h3>
+              <p>
+                Browse previews and find the edit that fits your vision.
+              </p>
+            </div>
+
+            <div>
+              <span className="step-no">02</span>
+              <Coins />
+              <h3>Earn points</h3>
+              <p>
+                Complete eligible rewarded ads to build your balance.
+              </p>
+            </div>
+
+            <div>
+              <span className="step-no">03</span>
+              <Download />
+              <h3>Unlock & download</h3>
+              <p>
+                Spend points to access the original file from your library.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <a className="brand footer-brand" href="#top">
+          <span className="brand-mark">
+            <Clapperboard size={18} />
+          </span>
+
+          <span>
+            EDIT<span className="brand-accent">VAULT</span>
+            <small>CREATOR MARKETPLACE</small>
+          </span>
+        </a>
+
+        <span>Built for the people who make the edits.</span>
+
+        <div>
+          <a href="#how">How it works</a>
+          <a href="#creators">Creators</a>
+          <a href="mailto:hello@editvault.example">Contact</a>
+        </div>
+
+        <small>© 2026 EditVault · Respect the original.</small>
+      </footer>
+
+      {previewEdit && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setPreviewEdit(null)}
+        >
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Preview ${previewEdit.title}`}
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: 'min(900px, 94vw)', maxWidth: '900px' }}
+          >
+            <button
+              className="modal-close"
+              onClick={() => setPreviewEdit(null)}
+              aria-label="Close preview"
+            >
+              <X />
+            </button>
+
+            <div className="eyebrow">EDITVAULT / VIDEO PREVIEW</div>
+
+            <h2 style={{ marginBottom: '16px' }}>
+              {previewEdit.title}
+            </h2>
+
+            <video
+              key={previewEdit.id}
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+              style={{
+                display: 'block',
+                width: '100%',
+                maxHeight: '70vh',
+                background: '#000',
+                borderRadius: '12px',
+              }}
+              src={previewEdit.previewUrl}
+            >
+              Your browser does not support video playback.
+            </video>
+
+            <p style={{ marginTop: '12px' }}>
+              Preview only · Unlock the edit to access the original.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {notice && (
+        <div className="toast" role="status">
+          {notice}
+
+          <button
+            onClick={() => setNotice('')}
+            aria-label="Dismiss"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {modal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            if (!authLoading) setModal('');
+          }}
+        >
+          <div
+            className="modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={() => {
+                if (!authLoading) setModal('');
+              }}
+              aria-label="Close"
+              disabled={authLoading}
+            >
+              <X />
+            </button>
+
+            {modal === 'points' ? (
+              <>
+                <div className="modal-icon">
+                  <Coins />
+                </div>
+
+                <div className="eyebrow">YOUR WALLET</div>
+
+                <h2>
+                  {points} <span>points</span>
+                </h2>
+
+                <p>
+                  Earn points by completing verified rewarded ads.
+                  Ad rewards will be enabled once the provider's
+                  server-side verification is connected.
+                </p>
+
+                <button
+                  className="primary-cta full"
+                  onClick={() =>
+                    setNotice(
+                      'Reward ads are not connected in this preview yet.'
+                    )
+                  }
+                >
+                  Reward ads coming soon <ArrowUpRight size={16} />
+                </button>
+              </>
+            ) : modal === 'creator' ? (
+              <>
+                <div className="modal-icon">
+                  <Clapperboard />
+                </div>
+
+                <div className="eyebrow">CREATOR ACCESS</div>
+
+                <h2>
+                  Make it. <span>Own it.</span>
+                </h2>
+
+                <p>
+                  Creator accounts can upload original edits, set
+                  point prices, and request manual verification.
+                  Sign up first, then submit your TikTok profile
+                  for review.
+                </p>
+
+                <button
+                  className="primary-cta full"
+                  onClick={() => openAuth('signup')}
+                >
+                  Create creator account <ArrowUpRight size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="modal-icon">
+                  <UserRound />
+                </div>
+
+                <div className="eyebrow">
+                  {modal === 'login'
+                    ? 'WELCOME BACK'
+                    : 'YOUR CREATOR JOURNEY STARTS HERE'}
+                </div>
+
+                <h2>
+                  {modal === 'login'
+                    ? 'Good to see you.'
+                    : 'Join the vault.'}
+                </h2>
+
+                <p>
+                  {modal === 'login'
+                    ? 'Log in to access your library and points.'
+                    : 'Create an account to unlock edits or publish your own.'}
+                </p>
+
+                <form onSubmit={submitAuth}>
+                  {modal === 'signup' && (
+                    <label>
+                      Display name
+                      <input
+                        required
+                        type="text"
+                        autoComplete="name"
+                        value={displayName}
+                        onChange={(event) =>
+                          setDisplayName(event.target.value)
+                        }
+                        placeholder="Your creator name"
+                        minLength={2}
+                        maxLength={60}
+                      />
+                    </label>
+                  )}
+
+                  <label>
+                    Email address
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) =>
+                        setEmail(event.target.value)
+                      }
+                      placeholder="you@example.com"
+                    />
+                  </label>
+
+                  <label>
+                    Password
+                    <input
+                      required
+                      minLength={8}
+                      type="password"
+                      autoComplete={
+                        modal === 'login'
+                          ? 'current-password'
+                          : 'new-password'
+                      }
+                      value={password}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
+                      placeholder="At least 8 characters"
+                    />
+                  </label>
+
+                  <button
+                    className="primary-cta full"
+                    type="submit"
+                    disabled={authLoading}
+                  >
+                    {authLoading
+                      ? 'Please wait...'
+                      : modal === 'login'
+                      ? 'Log in'
+                      : 'Create account'}
+
+                    {!authLoading && <ArrowUpRight size={16} />}
+                  </button>
+                </form>
+
+                <div className="modal-switch">
+                  {modal === 'login' ? (
+                    <>
+                      New here?{' '}
+                      <button
+                        disabled={authLoading}
+                        onClick={() => openAuth('signup')}
+                      >
+                        Create an account
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        disabled={authLoading}
+                        onClick={() => openAuth('login')}
+                      >
+                        Log in
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
