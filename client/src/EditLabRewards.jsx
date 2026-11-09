@@ -29,23 +29,23 @@ function calculateProcessingCost(options) {
 }
 
 const PRESETS = [
-  { id: 'clean', en: 'Clean', ar: 'طبيعي', descEn: 'Natural contrast', descAr: 'ألوان طبيعية', filter: 'none', swatch: 'linear-gradient(135deg,#637381,#cad2d8)' },
-  { id: 'cinematic', en: 'Cinematic', ar: 'سينمائي', descEn: 'Deep contrast', descAr: 'تباين سينمائي', filter: 'contrast(1.12) saturate(1.12) brightness(.97)', swatch: 'linear-gradient(135deg,#162b42,#c49a6c)' },
-  { id: 'warm', en: 'Golden hour', ar: 'ذهبي دافئ', descEn: 'Warm highlights', descAr: 'إضاءة دافئة', filter: 'sepia(.17) saturate(1.13) contrast(1.04) brightness(1.02)', swatch: 'linear-gradient(135deg,#72462d,#e9b975)' },
-  { id: 'cool', en: 'Cool tone', ar: 'بارد', descEn: 'Blue shadows', descAr: 'ظلال مائلة للأزرق', filter: 'saturate(.92) hue-rotate(8deg) contrast(1.08)', swatch: 'linear-gradient(135deg,#1d4261,#9abed5)' },
-  { id: 'moody', en: 'Moody', ar: 'غامق', descEn: 'Muted and dark', descAr: 'ألوان هادئة وداكنة', filter: 'brightness(.91) contrast(1.16) saturate(.78)', swatch: 'linear-gradient(135deg,#171c2b,#6f6b83)' },
-  { id: 'vibrant', en: 'Vibrant', ar: 'ألوان زاهية', descEn: 'Color pop', descAr: 'ألوان أكثر حيوية', filter: 'saturate(1.34) contrast(1.06) brightness(1.02)', swatch: 'linear-gradient(135deg,#4b51a6,#e580b3)' },
-  { id: 'pure_quality', group: 'clean', en: 'Pure Quality', ar: 'بيور كواليتي', descEn: 'Crisp, natural detail', descAr: 'حدة ونقاء طبيعي', filter: 'contrast(1.055) saturate(1.065) brightness(1.015)', swatch: 'linear-gradient(135deg,#506978,#d9eff0)' },
-  { id: 'soft_clean', group: 'clean', en: 'Soft Clean', ar: 'سوفت كلين', descEn: 'Soft skin-friendly tones', descAr: 'درجات ناعمة للبشرة', filter: 'contrast(.96) brightness(1.035) saturate(.91)', swatch: 'linear-gradient(135deg,#756981,#f1cbd4)' },
-  { id: 'bw_classic', group: 'mono', en: 'Black & White', ar: 'أبيض وأسود', descEn: 'Classic monochrome', descAr: 'أبيض وأسود كلاسيك', filter: 'grayscale(1) contrast(1.16)', swatch: 'linear-gradient(135deg,#16181c,#e9e9ea)' },
-  { id: 'bw_noir', group: 'mono', en: 'Noir B&W', ar: 'نوار أبيض وأسود', descEn: 'Deep noir contrast', descAr: 'كونتراست قوي سينمائي', filter: 'grayscale(1) contrast(1.38) brightness(.92)', swatch: 'linear-gradient(135deg,#030405,#aeb0b7)' },
-  { id: 'bw_film', group: 'mono', en: 'Silver Film', ar: 'فيلم فضي', descEn: 'Soft vintage mono', descAr: 'أسود وأبيض فيلم قديم', filter: 'grayscale(1) contrast(.98) brightness(1.05)', swatch: 'linear-gradient(135deg,#4a4b50,#e9e5dd)' },
-  { id: 'teal_orange', group: 'cinema', en: 'Teal & Orange', ar: 'تيل وأورانج', descEn: 'Movie-grade separation', descAr: 'ستايل ألوان الأفلام', filter: 'contrast(1.13) saturate(1.19) hue-rotate(-6deg)', swatch: 'linear-gradient(135deg,#063b4b,#ec9351)' },
-  { id: 'night_drive', group: 'cinema', en: 'Night Drive', ar: 'نايت درايف', descEn: 'Cool neon shadows', descAr: 'ظلال نيون باردة', filter: 'contrast(1.21) brightness(.89) saturate(1.22) hue-rotate(10deg)', swatch: 'linear-gradient(135deg,#12113b,#39b2d0)' },
-  { id: 'purple_ae', group: 'creative', en: 'Purple Glow', ar: 'بيربل جلو', descEn: 'After Effects-inspired', descAr: 'ستايل مستوحى من افترافكت', filter: 'contrast(1.09) saturate(1.25) hue-rotate(16deg)', swatch: 'linear-gradient(135deg,#2c174d,#d074e3)' },
-  { id: 'dreamy', group: 'creative', en: 'Dreamy', ar: 'دريمي', descEn: 'Airy soft highlights', descAr: 'إضاءة ناعمة حالمة', filter: 'contrast(.92) brightness(1.08) saturate(.92)', swatch: 'linear-gradient(135deg,#827db8,#ffcfdb)' },
-  { id: 'anime_pop', group: 'creative', en: 'Anime Pop', ar: 'أنمي بوب', descEn: 'Bold vivid colors', descAr: 'ألوان قوية للأنمي', filter: 'contrast(1.14) saturate(1.48) brightness(1.01)', swatch: 'linear-gradient(135deg,#2141c1,#ef55a6)' },
-  { id: 'retro_film', group: 'creative', en: 'Retro Film', ar: 'ريترو فيلم', descEn: 'Faded vintage warmth', descAr: 'ألوان فيلم قديم', filter: 'sepia(.24) contrast(.94) saturate(.83) brightness(1.06)', swatch: 'linear-gradient(135deg,#715344,#e9c69c)' },
+  { id: 'clean', en: 'Original', ar: 'الأصلي', descEn: 'No added color treatment', descAr: 'بدون تعديل على الألوان', filter: 'none', swatch: 'linear-gradient(135deg,#637381,#cad2d8)' },
+  { id: 'cinematic', en: 'Cinema Pro', ar: 'سينما برو', descEn: 'Deeper cinematic contrast', descAr: 'تباين سينمائي أعمق', filter: 'contrast(1.12) saturate(1.12) brightness(.97)', swatch: 'linear-gradient(135deg,#162b42,#c49a6c)' },
+  { id: 'warm', en: 'Fire', ar: 'فاير', descEn: 'Fiery warm highlights', descAr: 'درجات دافئة ولمسة نارية', filter: 'sepia(.17) saturate(1.13) contrast(1.04) brightness(1.02)', swatch: 'linear-gradient(135deg,#72462d,#e9b975)' },
+  { id: 'cool', en: 'Ice Blue', ar: 'آيس بلو', descEn: 'Fresh blue shadows', descAr: 'ظلال زرقاء باردة', filter: 'saturate(.92) hue-rotate(8deg) contrast(1.08)', swatch: 'linear-gradient(135deg,#1d4261,#9abed5)' },
+  { id: 'moody', en: 'Dark Motion', ar: 'دارك موشن', descEn: 'Dark and muted tones', descAr: 'درجات داكنة وهادئة', filter: 'brightness(.91) contrast(1.16) saturate(.78)', swatch: 'linear-gradient(135deg,#171c2b,#6f6b83)' },
+  { id: 'vibrant', en: 'Color Rush', ar: 'كلر راش', descEn: 'Vibrant color boost', descAr: 'ألوان قوية وحيوية', filter: 'saturate(1.34) contrast(1.06) brightness(1.02)', swatch: 'linear-gradient(135deg,#4b51a6,#e580b3)' },
+  { id: 'pure_quality', group: 'clean', en: 'Pure Quality', ar: 'بيور كواليتي', descEn: 'Clean detail and subtle sharpness', descAr: 'نقاء مع زيادة خفيفة في الحدة', filter: 'contrast(1.055) saturate(1.065) brightness(1.015)', swatch: 'linear-gradient(135deg,#506978,#d9eff0)' },
+  { id: 'soft_clean', group: 'clean', en: 'Soft Touch', ar: 'سوفت تاتش', descEn: 'Gentle skin-friendly finish', descAr: 'ألوان ناعمة ومريحة للبشرة', filter: 'contrast(.96) brightness(1.035) saturate(.91)', swatch: 'linear-gradient(135deg,#756981,#f1cbd4)' },
+  { id: 'bw_classic', group: 'mono', en: 'Classic Mono', ar: 'كلاسيك مونو', descEn: 'Timeless monochrome', descAr: 'أبيض وأسود كلاسيكي', filter: 'grayscale(1) contrast(1.16)', swatch: 'linear-gradient(135deg,#16181c,#e9e9ea)' },
+  { id: 'bw_noir', group: 'mono', en: 'Noir Shadow', ar: 'نوار شادو', descEn: 'Dramatic black and white', descAr: 'أبيض وأسود بتباين قوي', filter: 'grayscale(1) contrast(1.38) brightness(.92)', swatch: 'linear-gradient(135deg,#030405,#aeb0b7)' },
+  { id: 'bw_film', group: 'mono', en: 'Silver Film', ar: 'سيلفر فيلم', descEn: 'Soft vintage monochrome', descAr: 'طابع فيلم فضي قديم', filter: 'grayscale(1) contrast(.98) brightness(1.05)', swatch: 'linear-gradient(135deg,#4a4b50,#e9e5dd)' },
+  { id: 'teal_orange', group: 'cinema', en: 'Blockbuster', ar: 'بلوكباستر', descEn: 'Movie-style teal and orange', descAr: 'تباين أزرق وبرتقالي سينمائي', filter: 'contrast(1.13) saturate(1.19) hue-rotate(-6deg)', swatch: 'linear-gradient(135deg,#063b4b,#ec9351)' },
+  { id: 'night_drive', group: 'cinema', en: 'Neon Night', ar: 'نيون نايت', descEn: 'Neon-lit cool shadows', descAr: 'ألوان نيون بظلال باردة', filter: 'contrast(1.21) brightness(.89) saturate(1.22) hue-rotate(10deg)', swatch: 'linear-gradient(135deg,#12113b,#39b2d0)' },
+  { id: 'purple_ae', group: 'creative', en: 'Purple Haze', ar: 'بيربل هيز', descEn: 'Purple creative color grade', descAr: 'درجات بنفسجية إبداعية', filter: 'contrast(1.09) saturate(1.25) hue-rotate(16deg)', swatch: 'linear-gradient(135deg,#2c174d,#d074e3)' },
+  { id: 'dreamy', group: 'creative', en: 'Dream Glow', ar: 'دريم جلو', descEn: 'Soft dreamy highlights', descAr: 'إضاءة ناعمة وحالمة', filter: 'contrast(.92) brightness(1.08) saturate(.92)', swatch: 'linear-gradient(135deg,#827db8,#ffcfdb)' },
+  { id: 'anime_pop', group: 'creative', en: 'Anime Fire', ar: 'أنمي فاير', descEn: 'Punchy anime colors', descAr: 'ألوان أنمي مشبعة وقوية', filter: 'contrast(1.14) saturate(1.48) brightness(1.01)', swatch: 'linear-gradient(135deg,#2141c1,#ef55a6)' },
+  { id: 'retro_film', group: 'creative', en: 'Vintage Film', ar: 'فينتج فيلم', descEn: 'Faded retro warmth', descAr: 'دفء ولمسة أفلام قديمة', filter: 'sepia(.24) contrast(.94) saturate(.83) brightness(1.06)', swatch: 'linear-gradient(135deg,#715344,#e9c69c)' },
 ]; // EDITVAULT_CC_STUDIO_V3
 
 function formatBytes(value) {
@@ -111,7 +111,7 @@ export default function EditLabRewards({ user, language = 'en', onNotice, onLogi
   const [compareMode, setCompareMode] = useState('after');
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [presetId, setPresetId] = useState('cinematic');
+  const [presetId, setPresetId] = useState('pure_quality');
   const [ccCategory, setCcCategory] = useState('all');
   const [quality, setQuality] = useState('balanced');
   const [sharpness, setSharpness] = useState('off');
@@ -217,7 +217,8 @@ export default function EditLabRewards({ user, language = 'en', onNotice, onLogi
         }
       } catch { /* the export succeeded; wallet display can refresh later */ }
       const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]/gi, '-').slice(0, 70) || 'editvault-video';
-      const downloadName = `${baseName}-editvault.mp4`;
+      const ccSlug = activePreset.en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const downloadName = `${baseName}-${ccSlug}-editvault.mp4`;
       const a = document.createElement('a');
       a.href = url;
       a.download = downloadName;
@@ -372,16 +373,36 @@ export default function EditLabRewards({ user, language = 'en', onNotice, onLogi
                 { id: 'mono', en: 'B&W', ar: 'أبيض وأسود' }, { id: 'cinema', en: 'Cinematic', ar: 'سينمائي' },
                 { id: 'creative', en: 'AE styles', ar: 'ستايلات افترافكت' },
               ].map((category) => <button key={category.id} type="button" className={ccCategory === category.id ? 'is-active' : ''} aria-pressed={ccCategory === category.id} onClick={() => setCcCategory(category.id)}>{isArabic ? category.ar : category.en}</button>)}</div><span className="evlr-cc-count">{PRESETS.filter(preset => ccCategory === 'all' || (preset.group || (['clean'].includes(preset.id) ? 'clean' : ['cinematic','warm','cool','moody'].includes(preset.id) ? 'cinema' : 'creative')) === ccCategory).length} {tx('looks', 'فلاتر')}</span></div>
-              <div className="evlr-presets-grid">{PRESETS.filter(preset => ccCategory === 'all' || (preset.group || (['clean'].includes(preset.id) ? 'clean' : ['cinematic','warm','cool','moody'].includes(preset.id) ? 'cinema' : 'creative')) === ccCategory).map((preset) => <button type="button" key={preset.id} className={`evlr-preset ${preset.id === presetId ? 'is-selected' : ''}`} onClick={() => { setPresetId(preset.id); setCompareMode('after'); }} aria-pressed={preset.id === presetId}>
+              <div className="evlr-presets-grid">{PRESETS.filter(preset => ccCategory === 'all' || (preset.group || (['clean'].includes(preset.id) ? 'clean' : ['cinematic','warm','cool','moody'].includes(preset.id) ? 'cinema' : 'creative')) === ccCategory).map((preset) => <button type="button" key={preset.id} className={`evlr-preset ${preset.id === presetId ? 'is-selected' : ''}`} onClick={() => { setPresetId(preset.id); setCompareMode('after'); setResult(null); setProcessError(''); }} aria-pressed={preset.id === presetId} disabled={processing}>
                 <span className="evlr-preset-swatch" style={{ background: preset.swatch }}><span /></span><span className="evlr-preset-copy"><strong>{isArabic ? preset.ar : preset.en}</strong><small>{isArabic ? preset.descAr : preset.descEn}</small></span>{preset.id === presetId && <Check size={14} className="evlr-preset-check" />}
               </button>)}</div>
               <div className="evlr-cc-note"><Sparkles size={14}/><span>{tx('Includes clean quality, 3 black-and-white moods and After Effects-inspired creative color looks. Browser preview is approximate; FFmpeg applies the final grading on export. Pure Quality adds subtle sharpening but cannot recover lost detail.', 'فيه بيور كواليتي و٣ ستايلات أبيض وأسود وتدرجات مستوحاة من افترافكت. المعاينة تقريبية، والتصدير النهائي بيتم عبر FFmpeg. بيور كواليتي بيضيف حدة خفيفة لكنه مش بيرجع تفاصيل مفقودة.')}</span></div>
               <div className="evlr-selected-look"><span className="evlr-selected-look-dot" style={{ background: activePreset.swatch }} /><div><strong>{tx('Selected look:', 'الفلتر المختار:')} {isArabic ? activePreset.ar : activePreset.en}</strong><small>{tx('The preview uses a browser color filter; server export applies the matching preset.', 'المعاينة بتستخدم فلتر ألوان في المتصفح، والتصدير بيطبّق الإعداد المقابل على السيرفر.')}</small></div><button type="button" onClick={() => setCompareMode(compareMode === 'before' ? 'after' : 'before')}><Eye size={14} /> {compareMode === 'before' ? tx('Show after', 'عرض بعد') : tx('Show before', 'عرض قبل')}</button></div>
+              <div className="evlr-cc-export-panel" aria-label={tx('Export selected color grade', 'تصدير تصحيح الألوان المختار')}>
+                <div className="evlr-cc-export-head">
+                  <div className="evlr-cc-export-icon"><ArrowDownToLine size={19} /></div>
+                  <div><strong>{tx(`Export ${activePreset.en}`, `صدّر ${activePreset.ar}`)}</strong><span>{tx('Direct MP4 export. No need to open the compression tool.', 'صدّر الفيديو من هنا مباشرة من غير ما تفتح قسم الضغط.')}</span></div>
+                </div>
+                <div className="evlr-cc-export-settings">
+                  <label htmlFor="evlr-cc-export-quality">{tx('Export quality', 'جودة التصدير')}</label>
+                  <select id="evlr-cc-export-quality" value={quality} disabled={processing} onChange={(event) => { setQuality(event.target.value); setResult(null); setProcessError(''); }}>
+                    {qualityOptions.map((option) => <option key={option.id} value={option.id}>{isArabic ? option.ar : option.en}</option>)}
+                  </select>
+                  <span className="evlr-cc-cost"><Coins size={14} /> {processingCostPoints} {tx('points', 'نقطة')}</span>
+                </div>
+                <button type="button" className="evlr-export-btn evlr-cc-export-action" onClick={compressAndDownload} disabled={!file || processing}>
+                  {processing ? <><LoaderCircle size={17} className="evlr-spin" /> {tx('Applying CC and exporting…', 'جارٍ تطبيق الألوان والتصدير…')}</> : <><ArrowDownToLine size={18} /> {tx('Apply CC & export MP4', 'تطبيق الـ CC وتصدير الفيديو')} <ArrowRight size={16} /></>}
+                </button>
+                {!file && <p className="evlr-cc-export-note">{tx('Choose a video first to activate export.', 'اختار فيديو الأول علشان تقدر تصدّره.')}</p>}
+                {!user && <p className="evlr-cc-export-note"><LockKeyhole size={13} /> {tx('Preview is free. Sign in to export using your points.', 'المعاينة مجانية. سجّل الدخول علشان تصدّر باستخدام نقاطك.')}</p>}
+                {processError && <div className="evlr-error" role="alert"><CircleHelp size={15} /> {processError}</div>}
+                {result && <div className="evlr-result" role="status"><CheckCircle2 size={17} /><div><strong>{tx('CC export complete', 'تم تصدير الـ CC بنجاح')}</strong><small>{formatBytes(result.before)} → {formatBytes(result.after)}</small></div><a href={result.url} download={result.name}><ArrowDownToLine size={14} /> {tx('Download again', 'تنزيل مرة أخرى')}</a></div>}
+              </div>
             </div>}
 
             {toolTab === 'compress' && <div className="evlr-tool-panel" role="tabpanel">
               <div className="evlr-control-heading"><div><span className="evlr-step">02</span><div><strong>{tx('Compression & export', 'ضغط وتصدير الفيديو')}</strong><small>{tx('MP4 / H.264 for broad compatibility. CC selection is included in the export.', 'صيغة MP4 / H.264 للتوافق مع أغلب الأجهزة، مع تطبيق الـ CC المختار.')}</small></div></div><span className="evlr-mini-tag"><Gauge size={13} /> FFmpeg</span></div>
-              <div className="evlr-quality-options" role="group" aria-label={tx('Output quality', 'جودة الفيديو الناتج')}>{qualityOptions.map((item) => <button type="button" key={item.id} className={quality === item.id ? 'is-selected' : ''} onClick={() => setQuality(item.id)} aria-pressed={quality === item.id}><strong>{isArabic ? item.ar : item.en}</strong><small>{isArabic ? item.subAr : item.subEn}</small></button>)}</div>
+              <div className="evlr-quality-options" role="group" aria-label={tx('Output quality', 'جودة الفيديو الناتج')}>{qualityOptions.map((item) => <button type="button" key={item.id} className={quality === item.id ? 'is-selected' : ''} onClick={() => { setQuality(item.id); setResult(null); setProcessError(''); }} aria-pressed={quality === item.id}><strong>{isArabic ? item.ar : item.en}</strong><small>{isArabic ? item.subAr : item.subEn}</small></button>)}</div>
               <div className="evlr-export-summary"><div><span>{tx('Source size', 'الحجم الأصلي')}</span><strong>{file ? formatBytes(file.size) : '—'}</strong></div><ArrowRight size={17} /><div><span>{tx('Result size', 'الحجم بعد الضغط')}</span><strong>{result ? formatBytes(result.after) : tx('After export', 'بعد التصدير')}</strong></div></div>
               {processError && <div className="evlr-error" role="alert"><CircleHelp size={15} /> {processError}</div>}
               {result && <div className="evlr-result" role="status"><CheckCircle2 size={17} /><div><strong>{tx('Export complete', 'اكتمل التصدير')}</strong><small>{formatBytes(result.before)} → {formatBytes(result.after)}{result.after < result.before ? ` · ${result.saved.toFixed(0)}% ${tx('smaller', 'أصغر')}` : ` · ${tx('No size reduction for this source', 'لم يقل حجم هذا الفيديو')}`}</small></div><a href={result.url} download={result.name}><ArrowDownToLine size={14} /> {tx('Download again', 'إعادة التنزيل')}</a></div>}
