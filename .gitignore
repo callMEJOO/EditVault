@@ -50,3 +50,5 @@ uploads/
 *.mov
 *.webm
 *.log
+_editvault-backups/
+EditVault-Arabic-Admin-Points-V1/

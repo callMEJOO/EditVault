@@ -1,0 +1,24 @@
+/* Standalone language switch: always visible, even for guests, RTL-safe. */
+.evl-language-picker { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  padding: 7px 10px; min-height: 38px; border: 1px solid rgba(198,255,77,.25);
+  border-radius: 11px; background: rgba(198,255,77,.055); color: #d5ff98; white-space: nowrap; }
+.evl-language-picker select { min-width: 75px; max-width: 105px; border: 0; outline: none;
+  background: transparent; color: #f5f4f8; font-size: 12px; font-weight: 750; cursor: pointer; }
+.evl-language-picker option { color: #17171d; background: #fff; }
+.evl-language-picker:focus-within { outline: 2px solid #c6ff4d; outline-offset: 2px; }
+.evl-admin-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding: 14px clamp(16px, 4vw, 46px); background:#121217; border-bottom:1px solid #ffffff1a; }
+.evl-admin-topbar > button { border:1px solid #ffffff23; border-radius:9px; padding:10px 16px; color:#f1eef8; background:#ffffff0b; cursor:pointer; }
+.evl-admin-shell .ev-admin-page { min-height: calc(100vh - 68px); }
+.evl-admin-shell[dir="rtl"] .ev-admin-table-wrap table { text-align: right; }
+.evl-admin-shell[dir="rtl"] .ev-admin-sidebar > button { text-align: right; }
+@media (max-width: 560px) {
+  .evh-header .evl-language-picker { padding: 6px 5px; gap:2px; min-height: 36px; }
+  .evh-header .evl-language-picker > span { display:none; }
+  .evh-header .evl-language-picker select { min-width: 58px; max-width: 72px; font-size: 10px; }
+  .evl-admin-topbar { padding: 12px; }
+}
+@media (max-width: 390px) {
+  .evh-header .evh-brand small { display:none; }
+  .evh-header .evh-points { padding: 6px; }
+}

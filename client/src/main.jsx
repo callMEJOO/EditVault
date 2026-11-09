@@ -45,6 +45,7 @@ import './creator-requests.css';
 import './purchase-library-upgrade.css';
 import './editvault-header-v4.css';
 import './creative-studio.css';
+import './editvault-language.css';
 const API_URL = (
   import.meta.env.VITE_API_URL || 'http://localhost:5000'
 ).replace(/\/+$/, '');
@@ -131,7 +132,10 @@ function App() {
   const [creatorApplicationOpen, setCreatorApplicationOpen] = useState(false);
   const [topazOpen, setTopazOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [language, setLanguage] = useState(() => localStorage.getItem('editvault_language') || 'en');
+  const [language, setLanguage] = useState(() => {
+    const saved = localStorage.getItem('editvault_language');
+    return ['ar', 'en', 'es'].includes(saved) ? saved : 'ar';
+  });
   const tx = (en, ar) => language === 'ar' ? ar : en;
 
   // Authentication state
@@ -175,12 +179,12 @@ function App() {
 useEffect(() => {
     const pageLabels = language === 'ar' ? {
       home: 'الرئيسية', explore: 'استكشف الإيديتات', 'scene-packs': 'حزم المشاهد', editlab: 'معمل المونتاج', earn: 'جمع النقاط',
-      accounts: 'الحسابات', creators: 'المبدعون', requests: 'طلبات التعديل', withdrawals: 'سحب الأرباح', how: 'كيف يعمل الموقع',
+      accounts: 'الحسابات', creators: 'المبدعون', requests: 'طلبات التعديل', withdrawals: 'سحب الأرباح', admin: 'لوحة الإدارة', how: 'كيف يعمل الموقع',
     
-      library: 'ظ…ظƒطھط¨طھظٹ',
+      library: 'مكتبتي',
     } : {
       home: 'Home', explore: 'Explore Edits', 'scene-packs': 'Scene Packs', editlab: 'EditLab', earn: 'Earn Points',
-      accounts: 'Accounts', creators: 'Creators', requests: 'Creator Requests', withdrawals: 'Withdrawals',
+      accounts: 'Accounts', creators: 'Creators', requests: 'Creator Requests', withdrawals: 'Withdrawals', admin: 'Admin Console',
       how: 'How It Works',
     
       library: 'My Library',
@@ -1032,8 +1036,19 @@ useEffect(() => {
 
   if (activePage === 'admin') {
     return (
-      <div className="app-shell" data-page="admin">
-        <AdminControlPanel active={true} user={user} onNotice={setNotice} onLogin={() => openAuth('login')} />
+      <div className="app-shell evl-admin-shell" data-page="admin" data-language={language} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="evl-admin-topbar">
+          <button type="button" onClick={() => navigateTo('home')}>{tx('← Back to EditVault', 'العودة إلى إيديت فولت ←')}</button>
+          <label className="evl-language-picker" title={tx('Interface language', 'لغة الموقع')}>
+            <span aria-hidden="true">🌐</span>
+            <select aria-label={tx('Interface language', 'لغة الموقع')} value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
+        </div>
+        <AdminControlPanel active={true} user={user} language={language} onNotice={setNotice} onLogin={() => { navigateTo('home'); openAuth('login'); }} />
         {notice && (
           <div className="toast" role="status">
             {notice}
@@ -1101,7 +1116,7 @@ useEffect(() => {
                 <button type="button" onClick={() => { setMobileNav(false); setProfileOpen(true); }}><UserRound size={17} /> {tx('Profile', 'الملف الشخصي')}</button>
                 <button type="button" onClick={() => { setMobileNav(false); canAccessCreatorStudio ? setCreatorStudioOpen(true) : setCreatorApplicationOpen(true); }}><Sparkles size={17} /> {canAccessCreatorStudio ? tx('Creator Studio', 'استوديو المبدع') : tx('Apply as creator', 'قدّم كصانع محتوى')}</button>
                 {canAccessCreatorStudio && <button type="button" onClick={() => navigateTo('withdrawals')}><Coins size={17} /> {tx('Withdrawals', 'سحب الأرباح')}</button>}
-                {user.role === 'admin' && <button type="button" onClick={() => { setMobileNav(false); document.getElementById('creator-admin-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}><ShieldCheck size={17} /> {tx('Admin', 'الإدارة')}</button>}
+                {user.role === 'admin' && <button type="button" onClick={() => { navigateTo('admin'); }}><ShieldCheck size={17} /> {tx('Admin', 'الإدارة')}</button>}
                 <button className="evh-logout" type="button" onClick={() => { setMobileNav(false); logout(); }}>{tx('Log out', 'تسجيل الخروج')}</button>
               </>
             ) : (
@@ -1114,6 +1129,14 @@ useEffect(() => {
         </nav>
 
         <div className="top-actions evh-actions">
+          <label className="evl-language-picker" title={tx('Interface language', 'لغة الموقع')}>
+            <span aria-hidden="true">🌐</span>
+            <select aria-label={tx('Interface language', 'لغة الموقع')} value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
           {canAccessCreatorStudio && <button type="button" className={`evw-top-link ${activePage === 'withdrawals' ? 'is-active' : ''}`} onClick={() => navigateTo('withdrawals')}><Coins size={16} /><span>{tx('Withdrawals', 'السحب')}</span><ArrowUpRight size={13} /></button>}
           <button className="points-pill evh-points" type="button" onClick={() => setModal('points')} aria-label={tx(`Wallet: ${points} points`, `المحفظة: ${points} نقطة`)}>
             <Coins size={15} /><b>{points}</b><span>{tx('PTS', 'نقطة')}</span>
@@ -1132,7 +1155,7 @@ useEffect(() => {
                 <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); setSettingsOpen(true); }}><Settings2 size={16}/>{tx('Settings', 'الإعدادات')}</button>
                 <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); canAccessCreatorStudio ? setCreatorStudioOpen(true) : setCreatorApplicationOpen(true); }}><Sparkles size={16}/>{canAccessCreatorStudio ? tx('Creator Studio', 'استوديو المبدع') : tx('Apply as creator', 'قدّم كصانع محتوى')}</button>
                 {canAccessCreatorStudio && <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); navigateTo('withdrawals'); }}><Coins size={16}/>{tx('Withdrawals', 'سحب الأرباح')}</button>}
-                {user.role === 'admin' && <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); document.getElementById('creator-admin-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}><ShieldCheck size={16}/>{tx('Admin', 'الإدارة')}</button>}
+                {user.role === 'admin' && <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); navigateTo('admin'); }}><ShieldCheck size={16}/>{tx('Admin', 'الإدارة')}</button>}
                 <button className="evh-logout" type="button" onClick={logout}>{tx('Log out', 'تسجيل الخروج')}</button>
               </div>
             </details>

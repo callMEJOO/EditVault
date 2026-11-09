@@ -68,6 +68,85 @@ router.post('/points-adjust', async (req, res, next) => {
   finally { client.release(); }
 });
 
+// Bulk point grants: server-authorized, atomic, logged per recipient, and idempotent.
+// Requires: node src/db/apply-admin-bulk-points.js once on the connected database.
+router.get('/points-grant-all/preview', async (_req, res, next) => {
+  try {
+    const result = await db.query('SELECT COUNT(*)::int AS total FROM users');
+    res.json({ recipientCount: result.rows[0].total });
+  } catch (error) { next(error); }
+});
+
+router.get('/points-grants', async (_req, res, next) => {
+  try {
+    const result = await db.query(`
+      SELECT g.id, g.points, g.note, g.recipient_count, g.created_at,
+        u.display_name AS admin_name
+      FROM admin_bulk_grants g LEFT JOIN users u ON u.id = g.admin_id
+      ORDER BY g.created_at DESC LIMIT 30`);
+    res.json({ grants: result.rows });
+  } catch (error) { next(error); }
+});
+
+router.post('/points-grant-all', async (req, res, next) => {
+  const amount = Number(req.body?.amount);
+  const note = String(req.body?.note || '').trim();
+  const requestId = String(req.body?.requestId || '').trim();
+  const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000 ||
+      note.length < 5 || note.length > 500 || !uuidPattern.test(requestId) ||
+      req.body?.confirmation !== 'GRANT_TO_ALL') {
+    return res.status(400).json({ error: 'Enter 1–100000 points, a reason (5–500 chars) and the required confirmation.' });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    // A stale admin JWT must not grant points after an administrator is demoted.
+    const admin = await client.query('SELECT id FROM users WHERE id=$1 AND role=$2', [req.user.id, 'admin']);
+    if (!admin.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Administrator access was revoked.' });
+    }
+    const create = await client.query(`
+      INSERT INTO admin_bulk_grants(id,admin_id,points,note)
+      VALUES($1,$2,$3,$4) ON CONFLICT(id) DO NOTHING RETURNING id`,
+      [requestId, req.user.id, amount, note]);
+    if (!create.rowCount) {
+      const existing = await client.query(
+        'SELECT admin_id,points,note,recipient_count,created_at FROM admin_bulk_grants WHERE id=$1', [requestId]);
+      await client.query('ROLLBACK');
+      const grant = existing.rows[0];
+      if (!grant || grant.admin_id !== req.user.id || Number(grant.points) !== amount || grant.note !== note) {
+        return res.status(409).json({ error: 'Request ID was already used for a different grant.' });
+      }
+      return res.json({ alreadyApplied: true, recipientCount: grant.recipient_count, amount, requestId });
+    }
+
+    // Account for users with no wallet yet; every operation is in one DB transaction.
+    await client.query(`INSERT INTO wallets(user_id,balance)
+      SELECT id,0 FROM users ON CONFLICT(user_id) DO NOTHING`);
+    const credited = await client.query(`
+      WITH recipients AS (
+        UPDATE wallets SET balance = balance + $1, updated_at = NOW()
+        WHERE user_id IN (SELECT id FROM users)
+        RETURNING user_id
+      )
+      INSERT INTO point_ledger(user_id,amount,reason,reference_id,idempotency_key,admin_id,admin_note)
+      SELECT user_id,$1,'admin_adjustment',$2::uuid,
+        'bulk:' || $2::text || ':' || user_id::text,$3::uuid,$4
+      FROM recipients
+      RETURNING id`, [amount, requestId, req.user.id, note]);
+    const recipientCount = credited.rowCount;
+    await client.query('UPDATE admin_bulk_grants SET recipient_count=$2 WHERE id=$1', [requestId, recipientCount]);
+    await client.query('COMMIT');
+    res.status(201).json({ amount, recipientCount, requestId, alreadyApplied: false });
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(error);
+  } finally { client.release(); }
+});
+
 router.get('/edits', async (req, res, next) => {
   try {
     const status = ['draft', 'published', 'removed'].includes(String(req.query.status || '')) ? String(req.query.status) : null;
