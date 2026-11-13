@@ -33,6 +33,7 @@ import CreatorWithdrawals from './CreatorWithdrawals.jsx';
 import ProfileSettings from './ProfileSettings.jsx';
 import MarketplaceSections from './MarketplaceSections.jsx';
 import EditLabRewards from './EditLabRewards.jsx';
+import RewardedAds from './RewardedAds.jsx';
 import { playStudioEntrySound } from './CreativeStudio.jsx';
 import AccountSettings from './AccountSettings.jsx';
 import PublicCreatorProfile from './PublicCreatorProfile.jsx';
@@ -1532,6 +1533,7 @@ useEffect(() => {
           onPointsChange={setPoints}
         />
 
+        <RewardedAds active={activePage === 'earn'} user={user} language={language} onLogin={() => openAuth('login')} onBalanceUpdate={setPoints} />
         <EditLabRewards user={user} language={language} active={activePage === 'editlab'} onNotice={setNotice} onLoginRequest={() => openAuth('login')} onPointsChange={setPoints} onOpenTopaz={() => setTopazOpen(true)} />
 
         <section className="premium-section" id="premium">
@@ -2065,18 +2067,14 @@ useEffect(() => {
                 </h2>
 
                 <p>
-                  {tx('Earn points by completing verified rewarded ads. Ad rewards will be enabled once the provider’s server-side verification is connected.', 'اجمع النقاط من الإعلانات المؤهلة بعد التحقق منها. سيتم تفعيل مكافآت الإعلانات عندما يكتمل ربط التحقق الآمن من جهة الخادم.')}
+                  {tx('Earn points through verified ads and sponsored offers. Check the Earn Points page for availability.', 'اجمع النقاط من الإعلانات والعروض الموثقة. ادخل قسم جمع النقاط لمتابعة المتاح.')}
                 </p>
 
                 <button
                   className="primary-cta full"
-                  onClick={() =>
-                    setNotice(
-                      'Reward ads are not connected in this preview yet.'
-                    )
-                  }
+                  onClick={() => { setModal(''); navigateTo('earn'); }}
                 >
-                  {tx('Reward ads coming soon', 'الإعلانات بالمكافآت قريبًا')} <ArrowUpRight size={16} />
+                  {tx('Open Earn Points', 'افتح قسم جمع النقاط')} <ArrowUpRight size={16} />
                 </button>
               </>
             ) : modal === 'creator' ? (
