@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import EditVaultGuide from './ev-guide/EditVaultGuide.jsx';
 import { createRoot } from 'react-dom/client';
 import {
   Search,
@@ -2229,6 +2230,7 @@ useEffect(() => {
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
+    <EditVaultGuide />
   </React.StrictMode>
 );
 

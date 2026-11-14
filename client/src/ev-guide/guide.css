@@ -1,0 +1,66 @@
+.ev-guide-root { --evg-bg:#101313; --evg-panel:#151a19; --evg-surface:#1c2421; --evg-border:rgba(209,255,169,.13); --evg-text:#f3f8ef; --evg-muted:#aab5aa; --evg-accent:#c2ff59; position:fixed; inset:auto 20px 20px auto; z-index:2147480000; font:inherit; color:var(--evg-text); font-family:system-ui,-apple-system,Segoe UI,Tahoma,sans-serif; }
+.ev-guide-root.is-ar { right:auto; left:20px; }
+.ev-guide-root *, .ev-guide-root *::before, .ev-guide-root *::after { box-sizing:border-box; }
+.ev-guide-root button, .ev-guide-root input { font:inherit; }
+.ev-guide-launch { cursor:pointer; display:flex; align-items:center; gap:12px; background:#151b19; color:#fff; box-shadow:0 12px 42px #0009,0 0 0 1px rgba(194,255,89,.26); border:1px solid rgba(194,255,89,.2); border-radius:24px; padding:9px 14px 9px 10px; direction:inherit; transition:transform .2s ease, box-shadow .2s ease; min-height:65px; }
+.ev-guide-launch:hover { transform:translateY(-4px); box-shadow:0 16px 52px #000a,0 0 0 1px rgba(194,255,89,.5); }
+.ev-guide-orb { display:grid; place-items:center; height:46px; width:46px; flex-shrink:0; border-radius:16px; color:#17200d; background:linear-gradient(140deg,#deff88,#a2ef37); }
+.ev-guide-launch-copy { display:flex; flex-direction:column; text-align:start; line-height:1.5; }
+.ev-guide-launch-copy b { font-weight:850; font-size:14px; }
+.ev-guide-launch-copy small { font-size:12px; color:#bcc4be; }
+.ev-guide-online { width:7px; height:7px; border-radius:50%; background:#b7fd64; box-shadow:0 0 12px #adff63; margin:0 4px; }
+.ev-guide-panel { width:min(392px,calc(100vw - 28px)); height:min(705px,calc(100dvh - 37px)); max-height:calc(100dvh - 37px); display:flex; flex-direction:column; overflow:hidden; border-radius:22px; background:var(--evg-panel); border:1px solid var(--evg-border); box-shadow:0 20px 75px #000b,0 0 0 1px #101611; animation:evg-appear .26s cubic-bezier(.2,.8,.2,1) both; }
+.ev-guide-head { display:flex; align-items:center; gap:12px; padding:15px 14px; background:radial-gradient(circle at top right, #2d4b22, #171f1b 62%, #141b17); border-bottom:1px solid rgba(210,255,182,.12); }
+.ev-guide-head-avatar { background:linear-gradient(140deg,#dcff95,#b5fd50); color:#1a2611; border-radius:14px; padding:10px; display:grid; place-items:center; }
+.ev-guide-head-content { display:flex; flex-direction:column; flex:1; min-width:0; gap:5px; }
+.ev-guide-head-content strong { font-size:14px; letter-spacing:.5px; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.ev-guide-head-content>span { color:#c3d1c4; font-size:11px; }
+.ev-guide-pill { background:rgba(198,255,99,.11); color:#d4ff93; border:1px solid rgba(202,255,120,.18); padding:3px 6px; border-radius:6px; font-size:9px; font-weight:700; }
+.ev-guide-close,.ev-guide-discover-title>button { display:grid; place-items:center; background:transparent; border:0; color:var(--evg-muted); padding:6px; border-radius:9px; cursor:pointer; }
+.ev-guide-close:hover,.ev-guide-discover-title>button:hover { background:rgba(255,255,255,.07); color:white; }
+.ev-guide-body { flex:1; min-height:85px; overflow-y:auto; padding:15px 12px; display:flex; flex-direction:column; gap:13px; scrollbar-width:thin; scrollbar-color:#35482d transparent; }
+.ev-guide-welcome { background:linear-gradient(145deg,#1d2b1f,#181d1b); border:1px solid var(--evg-border); border-radius:18px; padding:18px 15px; text-align:center; }
+.ev-guide-welcome-badge { display:grid; place-items:center; margin:0 auto 10px; height:52px; width:52px; color:#c8ff6b; border-radius:17px; background:rgba(194,255,89,.1); }
+.ev-guide-welcome h2 { margin:0 0 8px; font-size:17px; font-weight:850; color:white; }
+.ev-guide-welcome p { margin:0; color:#b9c6bb; font-size:12px; line-height:1.9; }
+.ev-guide-chips { margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.ev-guide-chips button { background:#242e27; color:#e5f2d9; font-size:11px; border:1px solid #3a4a38; padding:11px 7px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; text-align:start; }
+.ev-guide-chips button:hover { border-color:#a2d86d; }
+.ev-guide-msg { display:flex; align-items:flex-start; gap:8px; max-width:96%; line-height:1.9; animation:evg-appear .18s ease both; }
+.ev-guide-msg.user { align-self:flex-end; }
+.ev-guide-msg.assistant { align-self:flex-start; }
+.ev-guide-mini-avatar { width:26px; height:26px; border-radius:9px; background:#c2ff59; color:#111b0d; display:grid; place-items:center; flex-shrink:0; }
+.ev-guide-msg-details { max-width:100%; min-width:0; }
+.ev-guide-bubble { border-radius:15px; background:#252d29; padding:11px 13px; color:#edf3ec; font-size:12.5px; line-height:1.85; word-break:break-word; white-space:pre-wrap; text-align:start; }
+.ev-guide-msg.user .ev-guide-bubble { background:#bff65a; color:#15210e; border-start-end-radius:4px; font-weight:600; }
+.ev-guide-msg.assistant .ev-guide-bubble { border-start-start-radius:4px; border:1px solid #354038; }
+.ev-guide-action { display:inline-flex; align-items:center; gap:5px; font-size:11px; text-decoration:none; color:#c8ff75; margin:6px 3px 0; font-weight:800; }
+.ev-guide-suggestions { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.ev-guide-suggestions button { cursor:pointer; border:1px solid #47613a; background:rgba(165,245,99,.1); color:#cffaab; border-radius:8px; padding:6px; font-size:11px; text-align:start; }
+.ev-guide-feedback { display:flex; align-items:center; gap:5px; padding:5px 2px; font-size:10px; color:#9fb1a2; }
+.ev-guide-feedback button { cursor:pointer; background:none; border:0; color:#9fb1a2; border-radius:6px; display:grid; place-items:center; padding:5px; }
+.ev-guide-feedback button:hover,.ev-guide-feedback button.active { background:rgba(194,255,89,.14); color:#c2ff59; }
+.ev-guide-typing { display:flex; align-items:center; gap:5px; min-height:36px; }
+.ev-guide-typing span { display:block; height:6px; width:6px; border-radius:50%; background:#c2ff59; animation:evg-bounce 1s infinite alternate; }
+.ev-guide-typing span:nth-child(2) { animation-delay:.15s; }.ev-guide-typing span:nth-child(3) { animation-delay:.3s; }
+.ev-guide-discover { border-top:1px solid var(--evg-border); padding:10px 12px 7px; background:#171c19; }
+.ev-guide-discover-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; color:#e5ecdf; }
+.ev-guide-discover-title>span { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:750; }
+.ev-guide-discover-title small { color:#9da99e; font-size:10px; }
+.ev-guide-catrow { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:thin; scrollbar-color:#374b33 transparent; }
+.ev-guide-catrow button { background:#202820; color:#adb9ab; border:1px solid #37433a; border-radius:12px; padding:7px 10px; font-size:10px; cursor:pointer; flex-shrink:0; white-space:nowrap; }
+.ev-guide-catrow button.selected { background:rgba(194,255,89,.15); border-color:#a5dd59; color:#d7ffa0; }
+.ev-guide-questions { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding-top:6px; }
+.ev-guide-questions button { display:flex; align-items:center; justify-content:space-between; background:#222a24; border:1px solid #2f3d33; padding:7px; border-radius:8px; text-align:start; color:#d6e4d1; font-size:10.5px; cursor:pointer; min-width:0; }
+.ev-guide-questions button:hover { border-color:#95ce60; }
+.ev-guide-inputbox { display:flex; gap:7px; padding:10px 12px 6px; background:#171c19; border-top:1px solid #243027; }
+.ev-guide-inputbox input { flex:1; min-width:0; border-radius:12px; border:1px solid #344435; padding:12px; font-size:12px; background:#232c25; color:white; outline:none; }
+.ev-guide-inputbox input:focus { border-color:#a1ec51; }
+.ev-guide-inputbox input::placeholder { color:#9ba69d; }
+.ev-guide-inputbox>button { display:grid; place-items:center; flex:0 0 44px; border:0; border-radius:12px; background:#c4ff67; color:#18250d; cursor:pointer; }
+.ev-guide-inputbox>button:disabled { opacity:.4; cursor:not-allowed; }
+.ev-guide-disclaimer { font-size:9px; color:#889a8c; padding:5px 9px 10px; text-align:center; background:#171c19; }
+@keyframes evg-appear { from { opacity:0; transform:translateY(13px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes evg-bounce { to { transform:translateY(-4px); opacity:.4; } }
+@media(max-width:520px) { .ev-guide-root, .ev-guide-root.is-ar { inset:auto 10px 12px auto; }.ev-guide-root.is-ar { right:auto; left:10px; } .ev-guide-panel { width:calc(100vw - 20px); height:min(730px,calc(100dvh - 24px)); max-height:calc(100dvh - 24px); border-radius:18px; } .ev-guide-launch-copy { display:none; } .ev-guide-launch { padding:8px; border-radius:17px; min-height:0; } .ev-guide-online { position:absolute; top:4px; right:5px; margin:0; } }
+@media(prefers-reduced-motion:reduce) { .ev-guide-root *, .ev-guide-root *::before, .ev-guide-root *::after { animation:none!important; transition:none!important; } }
