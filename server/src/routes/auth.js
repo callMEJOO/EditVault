@@ -12,7 +12,18 @@ router.post('/signup', async (req, res, next) => {
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-      const { rows } = await client.query('INSERT INTO users(email,password_hash,display_name) VALUES($1,$2,$3) RETURNING id,email,display_name,role,verification_status', [email.toLowerCase().trim(), hash, displayName.trim()]);
+      const userId = require('node:crypto').randomUUID();
+
+      const rawUsername = displayName.trim().toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      const username = `${(rawUsername || 'member').slice(0, 11)}_${userId.replace(/-/g, '').slice(0, 12)}`;
+
+      const { rows } = await client.query(
+        'INSERT INTO users(id,email,password_hash,display_name,username) VALUES($1,$2,$3,$4,$5) RETURNING id,email,display_name,username,role,verification_status',
+        [userId, email.toLowerCase().trim(), hash, displayName.trim(), username]
+      );
       await client.query('INSERT INTO wallets(user_id,balance) VALUES($1,0)', [rows[0].id]);
       const referralId = String(referralCode || '').trim();
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(referralId) && referralId !== String(rows[0].id)) {
